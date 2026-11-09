@@ -25,6 +25,11 @@ export const SignupPage: React.FC = () => {
     try {
       setAuthError(null);
       await AuthService.signUp(data);
+      // Automatically log in so session is active and user is not kicked back to /login
+      await AuthService.login({
+        email: data.email,
+        password: data.password,
+      });
       // Direct new student to onboarding flow
       navigate('/onboarding');
     } catch (err: any) {
