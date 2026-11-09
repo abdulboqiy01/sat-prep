@@ -181,33 +181,42 @@ export const LessonPlayerPage: React.FC = () => {
       </Card>
 
       {/* 3. Active Step Content Area */}
-      <Card className="p-8 sm:p-10 space-y-6 min-h-[340px] flex flex-col justify-between">
+      <Card className="p-8 sm:p-10 space-y-6 min-h-[380px] flex flex-col justify-between border-slate-200/90 shadow-sm bg-white">
         {currentStep < sections.length && currentSection ? (
-          <div className="space-y-4 animate-in fade-in duration-150">
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-              {currentSection.title}
-            </h2>
-            <div className="prose prose-slate max-w-none text-slate-700 text-base leading-relaxed">
-              <MathRenderer text={currentSection.content} />
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <div className="border-b border-slate-100 pb-4">
+              <span className="text-xs font-bold text-brand-600 uppercase tracking-widest">
+                Card {currentStep + 1} of {totalSteps}
+              </span>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mt-1">
+                {currentSection.title}
+              </h2>
+            </div>
+            
+            <div className="p-6 rounded-2xl bg-slate-50/70 border border-slate-200/60 shadow-xs">
+              <div className="text-slate-800 text-base leading-relaxed tracking-normal font-normal">
+                <MathRenderer text={currentSection.content} />
+              </div>
             </div>
           </div>
         ) : (
           /* Final Step: Key Takeaways & Completion Checkpoint */
-          <div className="space-y-6 animate-in fade-in duration-150">
-            <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
-              <CheckCircle2 className="w-5 h-5" /> Key Concepts & Takeaways
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 text-emerald-600 font-bold text-base">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <span>Key Concepts & SAT Hacks</span>
             </div>
 
             <div className="space-y-3">
               {keyTakeaways.map((takeaway: string, idx: number) => (
                 <div
                   key={idx}
-                  className="p-4 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl flex items-start gap-3 text-sm text-emerald-950 leading-relaxed"
+                  className="p-4 bg-emerald-50/50 border border-emerald-200/70 rounded-2xl flex items-start gap-3.5 text-sm text-emerald-950 leading-relaxed shadow-2xs"
                 >
-                  <span className="w-6 h-6 rounded-full bg-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="w-6 h-6 rounded-full bg-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
                     {idx + 1}
                   </span>
-                  <span>{takeaway}</span>
+                  <span className="font-medium">{takeaway}</span>
                 </div>
               ))}
             </div>
