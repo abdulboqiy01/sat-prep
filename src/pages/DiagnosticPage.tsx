@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import {
   AssessmentService,
   type DiagnosticEvaluationResult,
@@ -137,6 +138,15 @@ export const DiagnosticPage: React.FC = () => {
       });
 
       setEvaluation(evalResult);
+      // Automatically update the student's pathway in profile and preferences to match the diagnostic placement
+      await supabase
+        .from('profiles')
+        .update({ starting_level: evalResult.recommendedPathway })
+        .eq('id', (await supabase.auth.getUser()).data.user?.id || '');
+      await supabase
+        .from('student_preferences')
+        .update({ preferred_pathway: evalResult.recommendedPathway })
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id || '');
       await refreshProfile();
       setStage('results');
     } catch (err: any) {
