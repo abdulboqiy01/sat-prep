@@ -504,11 +504,19 @@ export const DiagnosticPage: React.FC = () => {
   const answeredQuestionsCount = Object.keys(selectedAnswers).length;
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
 
-  // Normalize options (e.g. object { A: "...", B: "..." } or array)
-  const optionsMap: Record<string, string> =
-    currentQuestion.options && typeof currentQuestion.options === 'object'
-      ? currentQuestion.options
-      : {};
+  // Normalize options whether stored as Array [{ id: "A", text: "..." }] or Object { A: "..." }
+  const normalizedOptions: Array<{ id: string; text: string }> = Array.isArray(currentQuestion.options)
+    ? currentQuestion.options.map((opt: any) =>
+        typeof opt === 'string'
+          ? { id: opt, text: opt }
+          : { id: opt.id || opt.key || '', text: opt.text || opt.value || JSON.stringify(opt) }
+      )
+    : currentQuestion.options && typeof currentQuestion.options === 'object'
+    ? Object.entries(currentQuestion.options).map(([key, val]) => ({
+        id: key,
+        text: typeof val === 'string' ? val : (val as any)?.text || JSON.stringify(val),
+      }))
+    : [];
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 py-2">
@@ -573,13 +581,13 @@ export const DiagnosticPage: React.FC = () => {
 
         {/* Options */}
         <div className="space-y-3 pt-2">
-          {Object.entries(optionsMap).map(([key, value]) => {
-            const isSelected = selectedAnswers[currentQuestion.id] === key;
+          {normalizedOptions.map((opt) => {
+            const isSelected = selectedAnswers[currentQuestion.id] === opt.id;
             return (
               <button
-                key={key}
+                key={opt.id}
                 type="button"
-                onClick={() => handleSelectAnswer(key)}
+                onClick={() => handleSelectAnswer(opt.id)}
                 className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-start gap-4 ${
                   isSelected
                     ? 'border-brand-600 bg-brand-50/60 shadow-sm'
@@ -593,10 +601,10 @@ export const DiagnosticPage: React.FC = () => {
                       : 'bg-slate-100 text-slate-600 border border-slate-300'
                   }`}
                 >
-                  {key}
+                  {opt.id}
                 </div>
                 <div className="text-sm sm:text-base text-slate-800 flex-1 pt-0.5">
-                  <MathRenderer content={String(value)} />
+                  <MathRenderer content={opt.text} />
                 </div>
               </button>
             );
