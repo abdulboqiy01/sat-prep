@@ -94,4 +94,34 @@ export class OnboardingService {
 
     return data;
   }
+
+  /**
+   * Updates student study preferences.
+   */
+  static async savePreferences(prefs: {
+    weekly_study_hours_budget: number;
+    preferred_study_days: string[];
+    preferred_pathway?: any;
+  }) {
+    const user = await AuthService.getCurrentUser();
+
+    const { data, error } = await supabase
+      .from('student_preferences')
+      .upsert(
+        {
+          user_id: user.id,
+          weekly_study_hours_budget: prefs.weekly_study_hours_budget,
+          preferred_study_days: prefs.preferred_study_days,
+          ...(prefs.preferred_pathway ? { preferred_pathway: prefs.preferred_pathway } : {}),
+        },
+        { onConflict: 'user_id' }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      throw new ValidationError(error.message);
+    }
+    return data;
+  }
 }

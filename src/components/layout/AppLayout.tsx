@@ -53,7 +53,7 @@ export const AppLayout: React.FC = () => {
           <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white">
             <Compass className="w-4 h-4" />
           </div>
-          <span className="font-bold text-slate-900 text-sm">Antigravity SAT</span>
+          <span className="font-bold text-slate-900 text-sm">SATPrep</span>
         </div>
 
         <button
@@ -75,7 +75,7 @@ export const AppLayout: React.FC = () => {
                   <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white">
                     <Compass className="w-4 h-4" />
                   </div>
-                  <span className="font-bold text-slate-900">Antigravity SAT</span>
+                  <span className="font-bold text-slate-900">SATPrep</span>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
@@ -142,7 +142,7 @@ export const AppLayout: React.FC = () => {
             </div>
             <div>
               <span className="font-bold text-base text-slate-900 tracking-tight">
-                Antigravity <span className="text-brand-600">SAT</span>
+              <span className="text-brand-600">SATPrep</span>
               </span>
             </div>
           </div>

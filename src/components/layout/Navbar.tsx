@@ -18,7 +18,7 @@ export const Navbar: React.FC = () => {
           </div>
           <div>
             <span className="font-bold text-lg text-slate-900 tracking-tight flex items-center gap-1.5">
-              Antigravity <span className="text-brand-600 font-extrabold">SAT</span>
+              <span className="text-brand-600 font-extrabold">SATPrep</span>
             </span>
           </div>
         </Link>

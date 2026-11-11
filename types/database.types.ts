@@ -887,6 +887,129 @@ export interface Database {
         }
         Relationships: []
       }
+      telegram_connections: {
+        Row: {
+          id: string
+          user_id: string
+          telegram_chat_id: number
+          telegram_username: string | null
+          connected_at: string
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          telegram_chat_id: number
+          telegram_username?: string | null
+          connected_at?: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          telegram_chat_id?: number
+          telegram_username?: string | null
+          connected_at?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      telegram_link_tokens: {
+        Row: {
+          id: string
+          user_id: string
+          token_hash: string
+          expires_at: string
+          used_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          token_hash: string
+          expires_at: string
+          used_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          token_hash?: string
+          expires_at?: string
+          used_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      reminder_settings: {
+        Row: {
+          id: string
+          user_id: string
+          enabled: boolean
+          reminder_time: string
+          timezone: string
+          study_days: string[]
+          reminder_before_minutes: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          enabled?: boolean
+          reminder_time?: string
+          timezone?: string
+          study_days?: string[]
+          reminder_before_minutes?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          enabled?: boolean
+          reminder_time?: string
+          timezone?: string
+          study_days?: string[]
+          reminder_before_minutes?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_logs: {
+        Row: {
+          id: string
+          user_id: string
+          notification_type: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          error_message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          notification_type: string
+          scheduled_at: string
+          sent_at?: string | null
+          status: string
+          error_message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          notification_type?: string
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          error_message?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Functions: {
       submit_quiz_attempt: {

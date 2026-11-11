@@ -11,6 +11,7 @@ import {
   TrendingUp,
   AlertTriangle,
   PlayCircle,
+  Send,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -24,6 +25,8 @@ import { useAuth } from '../context/AuthContext';
 import { AnalyticsService, type AnalyticsSummary } from '../services/analytics.service';
 import { RoadmapService, type ActiveRoadmapWithItems } from '../services/roadmap.service';
 import { QuizService } from '../services/quiz.service';
+import { TelegramService } from '../services/telegram.service';
+import type { TelegramConnection } from '../types/telegram.types';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge, PathwayBadge } from '../components/ui/Badge';
@@ -37,19 +40,22 @@ export const DashboardPage: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [activeRoadmapData, setActiveRoadmapData] = useState<ActiveRoadmapWithItems | null>(null);
   const [nextActivity, setNextActivity] = useState<any>(null);
+  const [tgConnection, setTgConnection] = useState<TelegramConnection | null>(null);
 
   useEffect(() => {
     async function loadDashboard() {
       try {
         setLoading(true);
-        const [summary, roadmapData, nextAct] = await Promise.all([
+        const [summary, roadmapData, nextAct, conn] = await Promise.all([
           AnalyticsService.getSummary().catch(() => null),
           RoadmapService.getActiveRoadmap().catch(() => null),
           QuizService.getNextRecommendedActivity().catch(() => null),
+          TelegramService.getConnection().catch(() => null),
         ]);
         setAnalytics(summary);
         setActiveRoadmapData(roadmapData);
         setNextActivity(nextAct);
+        if (conn) setTgConnection(conn);
       } finally {
         setLoading(false);
       }
@@ -98,6 +104,49 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Telegram Reminder Quick Banner */}
+      {tgConnection?.is_active ? (
+        <div className="px-4 py-2.5 bg-sky-50/70 border border-sky-200/80 rounded-2xl flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 text-sky-950 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <Send className="w-3.5 h-3.5 text-sky-600" />
+            <span>
+              Telegram Reminders Active:{' '}
+              <strong className="text-sky-900 font-semibold">
+                {tgConnection.telegram_username ? `@${tgConnection.telegram_username}` : 'Connected'}
+              </strong>
+            </span>
+          </div>
+          <Link
+            to="/settings"
+            className="text-sky-700 hover:text-sky-900 font-semibold inline-flex items-center gap-1 text-[11px]"
+          >
+            Manage Schedule →
+          </Link>
+        </div>
+      ) : (
+        <div className="px-4 py-3 bg-gradient-to-r from-sky-50 via-indigo-50/40 to-white border border-sky-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-xl bg-sky-500 text-white flex items-center justify-center shrink-0">
+              <Send className="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <span className="font-bold text-slate-900">Get daily SAT study plans on Telegram!</span>
+              <p className="text-slate-500 text-[11px]">
+                Receive personalized reminders and instant lesson links based on your roadmap.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => navigate('/settings')}
+            className="bg-sky-500 hover:bg-sky-600 text-white text-xs self-start sm:self-auto shrink-0 shadow-xs"
+          >
+            Connect Telegram
+          </Button>
+        </div>
+      )}
 
       {/* 2. Top Metric Cards (4 Grid) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
