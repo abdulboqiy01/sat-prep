@@ -116,15 +116,9 @@ export const TutorPage: React.FC = () => {
         context_type: 'general',
       });
 
-      // Update active session ID if this was a new session
-      if (!activeSessionId && response.session_id) {
-        setActiveSessionId(response.session_id);
-        await loadSessions();
-      }
-
       // Append assistant response
       const assistantMsg: any = {
-        id: 'resp-' + Date.now(),
+        id: response.message_id || 'resp-' + Date.now(),
         session_id: response.session_id,
         sender_role: 'assistant',
         content: response.content,
@@ -132,6 +126,12 @@ export const TutorPage: React.FC = () => {
       };
 
       setMessages((prev) => [...prev.filter((m) => m.id !== tempUserMsg.id), tempUserMsg, assistantMsg]);
+
+      // Update active session ID and refresh session list if this was a new session
+      if (!activeSessionId && response.session_id) {
+        setActiveSessionId(response.session_id);
+        await loadSessions();
+      }
     } catch (err: any) {
       setError(err?.message || 'Failed to send message to AI Tutor.');
     } finally {

@@ -30,7 +30,7 @@ export class GeminiService {
   }
 
   static getModel(): string {
-    return Deno.env.get('GEMINI_MODEL') || 'gemini-1.5-flash';
+    return Deno.env.get('GEMINI_MODEL') || 'gemini-3.5-flash-lite';
   }
 
   /**
