@@ -7,7 +7,7 @@ import type {
 } from '../types/telegram.types';
 
 export const DEFAULT_BOT_USERNAME =
-  import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'SatPrepReminderBot';
+  import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'MySATCoachBot';
 
 /**
  * Computes SHA-256 hash of a string in hex representation.

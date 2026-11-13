@@ -53,3 +53,4 @@ export interface TelegramLinkResponse {
   deepLink: string;
   expiresAt: string;
 }
+
