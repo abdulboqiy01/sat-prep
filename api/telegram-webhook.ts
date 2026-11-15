@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { createHash } from 'crypto';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://kqxnhnjcpzlxsxnroxmx.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -6,8 +7,7 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://sat-prep-beige.vercel.app';
 
 function sha256Hex(str: string): string {
-  // Using native Web Crypto or Node crypto
-  const hash = require('crypto').createHash('sha256');
+  const hash = createHash('sha256');
   hash.update(str);
   return hash.digest('hex');
 }
