@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
-  Compass,
+  GraduationCap,
   ArrowRight,
   Brain,
   TrendingUp,
@@ -221,14 +221,14 @@ export const LandingPage: React.FC = () => {
       <footer className="bg-white border-t border-slate-200 py-10 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 font-semibold text-slate-700">
-            <Compass className="w-4 h-4 text-brand-600" />
-            Antigravity SAT Platform
+            <GraduationCap className="w-4 h-4 text-brand-600" />
+            SATPrep Learning Platform
           </div>
           <div className="text-center md:text-left">
             SAT® is a trademark registered by the College Board, which is not affiliated with, and does not endorse, this product.
           </div>
           <div>
-            &copy; {new Date().getFullYear()} Antigravity SAT. All rights reserved.
+            &copy; {new Date().getFullYear()} SATPrep. All rights reserved.
           </div>
         </div>
       </footer>

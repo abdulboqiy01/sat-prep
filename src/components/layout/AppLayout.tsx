@@ -8,13 +8,13 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Compass,
   Menu,
   X,
   Flame,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PathwayBadge } from '../ui/Badge';
+import { BrandLogo } from '../ui/BrandLogo';
 import { cn } from '../../utils/cn';
 
 interface NavItem {
@@ -49,12 +49,7 @@ export const AppLayout: React.FC = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
       {/* Mobile Top Header */}
       <header className="md:hidden sticky top-0 z-40 bg-white border-b border-slate-200 px-4 h-15 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white">
-            <Compass className="w-4 h-4" />
-          </div>
-          <span className="font-bold text-slate-900 text-sm">SATPrep</span>
-        </div>
+        <BrandLogo size="sm" />
 
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -71,12 +66,7 @@ export const AppLayout: React.FC = () => {
           <div className="w-4/5 max-w-xs bg-white h-full p-5 flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-200">
             <div>
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white">
-                    <Compass className="w-4 h-4" />
-                  </div>
-                  <span className="font-bold text-slate-900">SATPrep</span>
-                </div>
+                <BrandLogo size="sm" />
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-1 rounded-md text-slate-400 hover:text-slate-600"
@@ -136,15 +126,8 @@ export const AppLayout: React.FC = () => {
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200/80 p-5 shrink-0 min-h-screen justify-between sticky top-0 h-screen">
         <div className="space-y-6">
           {/* Brand header */}
-          <div className="flex items-center gap-2.5 px-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-xs">
-              <Compass className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="font-bold text-base text-slate-900 tracking-tight">
-              <span className="text-brand-600">SATPrep</span>
-              </span>
-            </div>
+          <div className="px-2">
+            <BrandLogo size="md" />
           </div>
 
           {/* Student Status Summary Card */}

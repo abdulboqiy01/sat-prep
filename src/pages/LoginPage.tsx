@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Compass, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { loginSchema, type LoginInput } from '../schemas/auth.schema';
 import { AuthService } from '../services/auth.service';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
+import { BrandLogo } from '../components/ui/BrandLogo';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -42,13 +43,8 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <Link to="/" className="inline-flex items-center gap-2.5 mb-6 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition">
-            <Compass className="w-5 h-5" />
-          </div>
-          <span className="font-bold text-xl text-slate-900 tracking-tight">
-            Antigravity <span className="text-brand-600">SAT</span>
-          </span>
+        <Link to="/" className="inline-flex mb-6 group justify-center">
+          <BrandLogo size="lg" />
         </Link>
         <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
           Welcome back

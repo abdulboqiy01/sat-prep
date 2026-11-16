@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Compass,
+  GraduationCap,
   ArrowRight,
   ArrowLeft,
   Sparkles,
@@ -106,9 +106,9 @@ export const OnboardingPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between py-8 px-4 sm:px-6 lg:px-8">
       {/* Header Bar */}
       <div className="max-w-2xl mx-auto w-full flex items-center justify-between mb-8">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white">
-            <Compass className="w-4 h-4" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white shadow-xs">
+            <GraduationCap className="w-4 h-4" />
           </div>
           <span className="font-bold text-slate-900 text-sm">Personalize Your SAT Prep</span>
         </div>
