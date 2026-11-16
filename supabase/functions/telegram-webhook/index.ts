@@ -201,14 +201,17 @@ serve(async (req) => {
         // Initialize default reminder settings if missing
         await supabase
           .from('reminder_settings')
-          .insert({
-            user_id: userId,
-            enabled: true,
-            reminder_time: '18:00:00',
-            timezone: 'UTC',
-            study_days: ['monday', 'wednesday', 'saturday'],
-            reminder_before_minutes: 30,
-          })
+          .upsert(
+            {
+              user_id: userId,
+              enabled: true,
+              reminder_time: '18:00:00',
+              timezone: 'UTC',
+              study_days: ['monday', 'wednesday', 'saturday'],
+              reminder_before_minutes: 30,
+            },
+            { onConflict: 'user_id' }
+          )
           .select()
           .maybeSingle();
 

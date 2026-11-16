@@ -163,7 +163,7 @@ export class TelegramService {
 
     const { data: created, error: insertError } = await supabase
       .from('reminder_settings')
-      .insert(defaultSettings)
+      .upsert(defaultSettings, { onConflict: 'user_id' })
       .select('*')
       .single();
 
@@ -191,11 +191,14 @@ export class TelegramService {
 
     const { data, error } = await supabase
       .from('reminder_settings')
-      .upsert({
-        user_id: user.id,
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
+      .upsert(
+        {
+          user_id: user.id,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      )
       .select('*')
       .single();
 
