@@ -189,6 +189,22 @@ export class TelegramService {
       throw new Error('Not authenticated');
     }
 
+    // 1. First try updating existing row for this user
+    const { data: updated } = await supabase
+      .from('reminder_settings')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', user.id)
+      .select('*')
+      .maybeSingle();
+
+    if (updated) {
+      return updated as ReminderSettings;
+    }
+
+    // 2. If row did not exist yet, insert with conflict resolution
     const { data, error } = await supabase
       .from('reminder_settings')
       .upsert(
@@ -246,17 +262,29 @@ export class TelegramService {
       throw new Error('Not authenticated');
     }
 
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-reminders`,
-      {
+    let response: Response;
+    try {
+      response = await fetch('/api/send-reminders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ action: 'test_notification' }),
-      }
-    );
+      });
+    } catch {
+      response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-reminders`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ action: 'test_notification' }),
+        }
+      );
+    }
 
     const result = await response.json();
     if (!response.ok) {
