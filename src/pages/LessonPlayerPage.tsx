@@ -18,10 +18,12 @@ import { MathRenderer } from '../utils/math';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export const LessonPlayerPage: React.FC = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const params = useParams<{ slug?: string; lessonId?: string }>();
+  const lessonKey = params.slug || params.lessonId;
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [associatedQuiz, setAssociatedQuiz] = useState<Quiz | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
@@ -30,10 +32,14 @@ export const LessonPlayerPage: React.FC = () => {
 
   useEffect(() => {
     async function loadLesson() {
-      if (!slug) return;
+      if (!lessonKey) {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
-        const l = await CurriculumService.getLessonBySlug(slug);
+        setLoadError(null);
+        const l = await CurriculumService.getLessonBySlugOrId(lessonKey);
         setLesson(l);
 
         const [prog, quizzes] = await Promise.all([
@@ -50,12 +56,15 @@ export const LessonPlayerPage: React.FC = () => {
         if (prog?.last_step_index) {
           setCurrentStep(prog.last_step_index);
         }
+      } catch (err: any) {
+        console.error('Error loading lesson:', err);
+        setLoadError(err?.message || 'Failed to load lesson content.');
       } finally {
         setLoading(false);
       }
     }
     loadLesson();
-  }, [slug]);
+  }, [lessonKey]);
 
   if (loading) {
     return (
@@ -68,8 +77,13 @@ export const LessonPlayerPage: React.FC = () => {
 
   if (!lesson) {
     return (
-      <div className="py-20 text-center space-y-4">
+      <div className="py-20 text-center space-y-4 max-w-md mx-auto">
         <h2 className="text-xl font-bold text-slate-900">Lesson not found</h2>
+        {loadError && (
+          <p className="text-xs text-red-500 bg-red-50 p-3 rounded-xl border border-red-200">
+            {loadError}
+          </p>
+        )}
         <Button onClick={() => navigate('/learn')}>Back to Lessons</Button>
       </div>
     );

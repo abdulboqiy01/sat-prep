@@ -93,15 +93,33 @@ export class CurriculumService {
    * Retrieves a single lesson by its URL slug.
    */
   static async getLessonBySlug(slug: string): Promise<Lesson> {
-    const { data, error } = await supabase
+    return this.getLessonBySlugOrId(slug);
+  }
+
+  /**
+   * Retrieves a single lesson by its URL slug or UUID.
+   */
+  static async getLessonBySlugOrId(identifier: string): Promise<Lesson> {
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    let query = supabase
       .from('lessons')
       .select('*, skills(id, name, code, domain), lesson_modules(id, title, slug)')
-      .eq('slug', slug)
-      .eq('is_published', true)
-      .single();
+      .eq('is_published', true);
 
+    if (isUUID) {
+      query = query.eq('id', identifier);
+    } else {
+      query = query.eq('slug', identifier);
+    }
+
+    const { data, error } = await query.maybeSingle();
     if (error || !data) {
-      throw new NotFoundError(`Lesson with slug "${slug}"`);
+      const fallbackQuery = isUUID
+        ? supabase.from('lessons').select('*, skills(id, name, code, domain), lesson_modules(id, title, slug)').eq('slug', identifier)
+        : supabase.from('lessons').select('*, skills(id, name, code, domain), lesson_modules(id, title, slug)').eq('id', identifier);
+      const { data: fallbackData } = await fallbackQuery.maybeSingle();
+      if (fallbackData) return fallbackData;
+      throw new NotFoundError(`Lesson "${identifier}"`);
     }
 
     return data;
