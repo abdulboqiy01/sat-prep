@@ -75,7 +75,7 @@ export default async function handler(req: any, res: any) {
       userId = user?.id;
     }
 
-    // 2. Action: Test notification for a single user
+    // 2. Action: Test notification for a single user (from Settings page)
     if (payload.action === 'test_notification') {
       if (!userId) {
         return res.status(401).json({ error: 'Please sign in to send a test reminder.' });
@@ -137,18 +137,19 @@ export default async function handler(req: any, res: any) {
       const targetScore = profile?.target_score || 1400;
 
       const testMsg =
-        `🔔 *Test Reminder from SATPrep!* 👋\n\n` +
-        `Hello ${studentName}! Your Telegram study notifications are actively working.\n\n` +
-        `📚 *Today's Planned Focus:*\n` +
-        `• ${subject}: *${lessonTitle}*\n` +
-        `• Estimated duration: *${estMinutes} minutes*\n` +
-        `• Target SAT Goal: *${targetScore}*\n\n` +
-        `Keep working towards your score! 🚀`;
+        `🔔 *Тестовое напоминание от SATPrep!* 👋\n\n` +
+        `Привет, ${studentName}! Твои Telegram-напоминания успешно настроены и активны.\n\n` +
+        `📚 *Следующий запланированный урок:*\n` +
+        `• Предмет: *${subject}*\n` +
+        `• Тема: *${lessonTitle}*\n` +
+        `• Длительность: *${estMinutes} минут*\n` +
+        `• Целевой балл: *${targetScore}*\n\n` +
+        `Бот будет присылать напоминание точно до начала каждого урока! 🚀`;
 
       await sendTelegramMessage(conn.telegram_chat_id, testMsg, {
         inline_keyboard: [
-          [{ text: '📚 Start Lesson Now', url: `${FRONTEND_URL}/learn` }],
-          [{ text: '📊 Go to Dashboard', url: `${FRONTEND_URL}/dashboard` }],
+          [{ text: '📚 Открыть урок', url: `${FRONTEND_URL}/learn` }],
+          [{ text: '📊 Личный кабинет', url: `${FRONTEND_URL}/dashboard` }],
         ],
       });
 
@@ -167,7 +168,7 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 3. Batch Cron Reminder Runner (Runs daily or hourly via cron or GET trigger)
+    // 3. Batch Cron Reminder Runner (Runs periodically via GitHub Actions or Vercel Cron)
     const { data: connections, error: connError } = await supabase
       .from('telegram_connections')
       .select('id, user_id, telegram_chat_id, telegram_username')
@@ -179,50 +180,103 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ status: 'No active telegram connections', sent: 0 });
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const currentDayName = dayNames[new Date().getDay()];
-
     let sentCount = 0;
     const errors: string[] = [];
 
     for (const conn of connections) {
       try {
-        // Check settings
+        // Fetch reminder settings for this student
         const { data: settings } = await supabase
           .from('reminder_settings')
           .select('*')
           .eq('user_id', conn.user_id)
           .maybeSingle();
 
-        // If settings exist and user disabled them, skip
+        // If settings exist and disabled, skip
         if (settings && !settings.enabled) {
           continue;
         }
 
-        // Check study days if configured
-        if (settings?.study_days && settings.study_days.length > 0) {
-          const matchDay = settings.study_days.some(
-            (d: string) => d.toLowerCase() === currentDayName
-          );
-          if (!matchDay) continue;
+        // Determine current local time in student's timezone
+        const tz = settings?.timezone || 'Asia/Tashkent';
+        let localDay = '';
+        let localHour = 0;
+        let localMinute = 0;
+        let localDateStr = '';
+
+        try {
+          const now = new Date();
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            weekday: 'long',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+          const parts = formatter.formatToParts(now);
+          localDay = (parts.find((p) => p.type === 'weekday')?.value || '').toLowerCase();
+          localHour = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
+          localMinute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+          
+          const y = parts.find((p) => p.type === 'year')?.value;
+          const m = parts.find((p) => p.type === 'month')?.value;
+          const d = parts.find((p) => p.type === 'day')?.value;
+          localDateStr = `${y}-${m}-${d}`;
+        } catch {
+          // Fallback to UTC if timezone string is unknown
+          const now = new Date();
+          const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+          localDay = dayNames[now.getUTCDay()];
+          localHour = now.getUTCHours();
+          localMinute = now.getUTCMinutes();
+          localDateStr = now.toISOString().split('T')[0];
         }
 
-        // Check if reminder was already sent today
+        // Check study days
+        if (settings?.study_days && settings.study_days.length > 0) {
+          const isStudyDay = settings.study_days.some(
+            (d: string) => d.toLowerCase() === localDay
+          );
+          if (!isStudyDay) continue; // Today is not a study day for this student
+        }
+
+        // Calculate lesson time and notification target time
+        const rawReminderTime = settings?.reminder_time || '18:00:00';
+        const [rHour, rMinute] = rawReminderTime.split(':').map((v: string) => parseInt(v, 10) || 0);
+        const lessonMinutesFromMidnight = rHour * 60 + rMinute;
+
+        // How many minutes before the lesson to send notification (e.g. 15 or 30 mins)
+        const reminderBefore = settings?.reminder_before_minutes ?? 15;
+        const targetNotifyMinutes = lessonMinutesFromMidnight - reminderBefore;
+        const currentMinutesFromMidnight = localHour * 60 + localMinute;
+
+        // Window check: if current time is within [-5, +14] minutes of the scheduled reminder time
+        const diff = currentMinutesFromMidnight - targetNotifyMinutes;
+        const isInNotificationWindow = diff >= -5 && diff <= 15;
+
+        // Only send if we are in the time window (or if manually triggered with bypass)
+        if (!isInNotificationWindow && payload.force !== true) {
+          continue;
+        }
+
+        // Check if reminder was already sent today to avoid double notifying
         const { data: alreadySent } = await supabase
           .from('notification_logs')
           .select('id')
           .eq('user_id', conn.user_id)
           .eq('status', 'sent')
-          .gte('sent_at', `${todayStr}T00:00:00Z`)
+          .gte('sent_at', `${localDateStr}T00:00:00Z`)
           .limit(1)
           .maybeSingle();
 
-        if (alreadySent) {
+        if (alreadySent && payload.force !== true) {
           continue;
         }
 
-        // Get user profile & roadmap item
+        // Get user profile & next roadmap lesson
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name, target_score')
@@ -255,18 +309,20 @@ export default async function handler(req: any, res: any) {
           }
         }
 
-        const studentName = profile?.full_name || 'Student';
+        const studentName = profile?.full_name || 'Студент';
+        const formattedLessonTime = `${String(rHour).padStart(2, '0')}:${String(rMinute).padStart(2, '0')}`;
+
         const msg =
-          `⏰ *Daily SAT Study Reminder* 📖\n\n` +
-          `Hi ${studentName}! Time for today's practice session.\n\n` +
-          `🎯 *Next Recommendation:* ${lessonTitle}\n` +
-          `⏱ *Estimated Duration:* ${estMinutes} mins\n\n` +
-          `Consistency is the secret to a 1500+ score. Ready to conquer today's goal? 💪`;
+          `⏰ *Напоминание о занятии SAT!* 📖\n\n` +
+          `Привет, ${studentName}! Твой урок начнется через *${reminderBefore} минут* (в *${formattedLessonTime}*).\n\n` +
+          `🎯 *Тема сегодняшнего урока:* ${lessonTitle}\n` +
+          `⏱ *Ориентировочное время:* ${estMinutes} минут\n\n` +
+          `Удели время сегодня, чтобы стабильно набрать свой целевой балл! 💪`;
 
         await sendTelegramMessage(conn.telegram_chat_id, msg, {
           inline_keyboard: [
-            [{ text: '🚀 Continue Studying', url: `${FRONTEND_URL}/learn` }],
-            [{ text: '📊 View Progress', url: `${FRONTEND_URL}/progress` }],
+            [{ text: '🚀 Начать урок сейчас', url: `${FRONTEND_URL}/learn` }],
+            [{ text: '📊 Мой прогресс', url: `${FRONTEND_URL}/progress` }],
           ],
         });
 

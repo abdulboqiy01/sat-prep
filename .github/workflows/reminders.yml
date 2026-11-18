@@ -1,0 +1,17 @@
+name: Automated Study Reminders
+
+on:
+  schedule:
+    # Run every 15 minutes (at :00, :15, :30, :45 of every hour)
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  send-study-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger SATPrep Reminders API
+        run: |
+          curl -s -X POST https://sat-prep-beige.vercel.app/api/send-reminders \
+            -H "Content-Type: application/json" \
+            -d '{"action": "cron_batch"}'
