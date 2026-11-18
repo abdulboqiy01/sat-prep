@@ -1,9 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://kqxnhnjcpzlxsxnroxmx.supabase.co';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  'https://kqxnhnjcpzlxsxnroxmx.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxeG5obmpjcHpseHN4bnJveG14Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzU0MDAyOSwiZXhwIjoyMTA5MTE2MDI5fQ.Caj7z9454M-3bjDsyXV_6uTSk9Rv_l3te5BbRm-BSFI';
+const TELEGRAM_BOT_TOKEN =
+  process.env.TELEGRAM_BOT_TOKEN ||
+  '9092984914:AAEMrpw-0rn58lFn2eRVFzwZAtDfEOmqTGE';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://sat-prep-beige.vercel.app';
 
 function sha256Hex(str: string): string {

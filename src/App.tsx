@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
+import { AdminRoute } from './components/layout/AdminRoute';
+import { AdminLayout } from './components/layout/AdminLayout';
 
 // Public pages
 import { LandingPage } from './pages/LandingPage';
@@ -24,6 +26,13 @@ import { TutorPage } from './pages/TutorPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+
+// Admin pages
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminStudentsPage } from './pages/admin/AdminStudentsPage';
+import { AdminLessonsPage } from './pages/admin/AdminLessonsPage';
+import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage';
+import { AdminTelegramPage } from './pages/admin/AdminTelegramPage';
 
 export const App: React.FC = () => {
   return (
@@ -65,6 +74,24 @@ export const App: React.FC = () => {
             <Route path="/tutor" element={<TutorPage />} />
             <Route path="/progress" element={<ProgressPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+
+          {/* Admin Panel */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="students" element={<AdminStudentsPage />} />
+            <Route path="lessons" element={<AdminLessonsPage />} />
+            <Route path="analytics" element={<AdminAnalyticsPage />} />
+            <Route path="telegram" element={<AdminTelegramPage />} />
           </Route>
 
           {/* 404 Catch-All */}
