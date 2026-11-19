@@ -132,19 +132,33 @@ export default async function handler(req: any, res: any) {
 
         const userId = tokenRow.user_id;
 
-        // Upsert connection
+        // Unlink any old account previously attached to this Telegram chat ID
         await supabase
           .from('telegram_connections')
-          .upsert(
-            {
-              user_id: userId,
-              telegram_chat_id: chatId,
-              telegram_username: telegramUsername,
-              connected_at: nowIso,
-              is_active: true,
-            },
-            { onConflict: 'user_id' }
-          );
+          .delete()
+          .eq('telegram_chat_id', chatId);
+
+        // Also remove any existing connection for this user_id
+        await supabase
+          .from('telegram_connections')
+          .delete()
+          .eq('user_id', userId);
+
+        // Insert new connection
+        const { error: connInsertError } = await supabase
+          .from('telegram_connections')
+          .insert({
+            user_id: userId,
+            telegram_chat_id: chatId,
+            telegram_username: telegramUsername,
+            connected_at: nowIso,
+            is_active: true,
+          });
+
+        if (connInsertError) {
+          console.error('Error inserting telegram connection:', connInsertError);
+          throw connInsertError;
+        }
 
         // Ensure default reminder settings exist
         await supabase

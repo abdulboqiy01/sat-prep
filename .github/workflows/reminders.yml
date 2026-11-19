@@ -15,3 +15,4 @@ jobs:
           curl -s -X POST https://sat-prep-beige.vercel.app/api/send-reminders \
             -H "Content-Type: application/json" \
             -d '{"action": "cron_batch"}'
+
