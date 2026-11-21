@@ -42,3 +42,4 @@ export const CefrBadge: React.FC<CefrBadgeProps> = ({ level, className, size = '
     </span>
   );
 };
+

@@ -14,6 +14,8 @@ import {
   AlertCircle,
   Lightbulb,
   Clock,
+  MoreVertical,
+  Trash2,
 } from 'lucide-react';
 
 const SUGGESTED_PROMPTS = [
@@ -33,12 +35,20 @@ export const TutorPage: React.FC = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [menuOpenSessionId, setMenuOpenSessionId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    const handleDocClick = () => setMenuOpenSessionId(null);
+    window.addEventListener('click', handleDocClick);
+    return () => window.removeEventListener('click', handleDocClick);
+  }, []);
 
   useEffect(() => {
     loadSessions();
@@ -88,6 +98,38 @@ export const TutorPage: React.FC = () => {
     setActiveSessionId(null);
     setMessages([]);
     setError(null);
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    const isConfirmed = window.confirm(
+      'Вы действительно хотите удалить этот чат с ИИ? Вся история сообщений будет удалена.'
+    );
+    if (!isConfirmed) return;
+
+    try {
+      setDeletingId(sessionId);
+      setError(null);
+      await TutorService.deleteSession(sessionId);
+
+      // Remove session from list
+      setSessions((prev) => {
+        const remaining = prev.filter((s) => s.id !== sessionId);
+        if (activeSessionId === sessionId) {
+          if (remaining.length > 0) {
+            setActiveSessionId(remaining[0].id);
+          } else {
+            setActiveSessionId(null);
+            setMessages([]);
+          }
+        }
+        return remaining;
+      });
+      setMenuOpenSessionId(null);
+    } catch (err: any) {
+      setError(err?.message || 'Не удалось удалить чат.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -184,32 +226,75 @@ export const TutorPage: React.FC = () => {
           ) : (
             sessions.map((sess) => {
               const isSelected = sess.id === activeSessionId;
+              const isMenuOpen = menuOpenSessionId === sess.id;
               const dateStr = new Date(sess.updated_at || sess.created_at).toLocaleDateString([], {
                 month: 'short',
                 day: 'numeric',
               });
 
               return (
-                <button
+                <div
                   key={sess.id}
                   onClick={() => setActiveSessionId(sess.id)}
-                  className={`w-full text-left p-3 rounded-xl transition-all ${
+                  className={`group relative w-full text-left p-3 rounded-xl transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-brand-50 text-brand-900 border border-brand-200 font-medium'
                       : 'hover:bg-slate-50 text-slate-700'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-xs font-semibold truncate flex-1">
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-xs font-semibold truncate flex-1 pr-1" title={sess.title || 'SAT Study Session'}>
                       {sess.title || 'SAT Study Session'}
                     </span>
-                    <span className="text-[10px] text-slate-400 flex-shrink-0">{dateStr}</span>
+
+                    {/* Date and Three-Dots Action Button */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <span className={`text-[10px] text-slate-400 ${isMenuOpen ? 'hidden' : 'group-hover:hidden'}`}>
+                        {dateStr}
+                      </span>
+
+                      {/* Three Dots Button */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenSessionId(isMenuOpen ? null : sess.id);
+                          }}
+                          className={`p-1 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-200/80 transition ${
+                            isMenuOpen ? 'bg-slate-200 text-slate-800 opacity-100' : 'opacity-70 group-hover:opacity-100'
+                          }`}
+                          title="Действия с чатом"
+                        >
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Floating Dropdown Menu */}
+                        {isMenuOpen && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 top-6 z-40 bg-white rounded-xl shadow-xl border border-slate-200/90 py-1 w-36 animate-in fade-in zoom-in-95 duration-100"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSession(sess.id)}
+                              disabled={deletingId === sess.id}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition text-left disabled:opacity-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>{deletingId === sess.id ? 'Удаление...' : 'Удалить чат'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
+
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
                     <Clock className="w-3 h-3" />
                     <span>{sess.subject ? sess.subject.replace('_', ' ') : 'General SAT'}</span>
                   </div>
-                </button>
+                </div>
               );
             })
           )}
@@ -248,6 +333,19 @@ export const TutorPage: React.FC = () => {
             <Badge variant="mint" className="text-[11px]">
               Socratic Mode
             </Badge>
+
+            {/* Optional Header Delete Button */}
+            {activeSession && (
+              <button
+                type="button"
+                onClick={() => handleDeleteSession(activeSession.id)}
+                disabled={deletingId === activeSession.id}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                title="Удалить этот чат"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 

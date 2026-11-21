@@ -162,3 +162,4 @@ CREATE POLICY "vocab_daily_stats_insert_own" ON public.vocabulary_daily_stats FO
 
 DROP POLICY IF EXISTS "vocab_daily_stats_update_own" ON public.vocabulary_daily_stats;
 CREATE POLICY "vocab_daily_stats_update_own" ON public.vocabulary_daily_stats FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+

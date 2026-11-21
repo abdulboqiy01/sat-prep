@@ -290,4 +290,39 @@ EDUCATIONAL CONDUCT RULES:
 
     return data;
   }
+
+  /**
+   * Permanently deletes a tutoring session and its conversation history.
+   */
+  static async deleteSession(sessionId: string): Promise<void> {
+    const user = await AuthService.getCurrentUser();
+
+    // 1. Delete associated messages explicitly
+    try {
+      await supabase
+        .from('tutor_messages')
+        .delete()
+        .eq('session_id', sessionId);
+    } catch {
+      // Ignore if foreign key CASCADE handles it automatically
+    }
+
+    // 2. Delete the session itself
+    const { error } = await supabase
+      .from('tutor_sessions')
+      .delete()
+      .eq('id', sessionId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      throw new ValidationError(error.message);
+    }
+
+    // 3. Clear local storage cache
+    try {
+      localStorage.removeItem(`sat_tutor_msgs_${sessionId}`);
+    } catch {
+      // Ignore local storage error
+    }
+  }
 }
