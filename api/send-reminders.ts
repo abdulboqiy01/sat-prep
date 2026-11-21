@@ -109,6 +109,35 @@ export default async function handler(req: any, res: any) {
         .eq('is_active', true)
         .maybeSingle();
 
+      // Check overdue vocabulary for this user
+      let dueCount = 0;
+      try {
+        const { count } = await supabase
+          .from('user_vocabulary')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .lte('next_review_at', new Date().toISOString());
+        dueCount = count || 0;
+      } catch {
+        // user_vocabulary may not have records yet
+      }
+
+      // Sample SAT Word of the Day
+      let wotdText = '';
+      try {
+        const { data: wotdList } = await supabase
+          .from('vocabulary_words')
+          .select('word, part_of_speech, definition')
+          .in('cefr_level', ['C1', 'C2'])
+          .limit(20);
+        if (wotdList && wotdList.length > 0) {
+          const sample = wotdList[Math.floor(Math.random() * wotdList.length)];
+          wotdText = `\n💡 *SAT Слово дня:* *${sample.word}* (${sample.part_of_speech})\n_${sample.definition}_\n`;
+        }
+      } catch {
+        // ignore fallback
+      }
+
       let lessonTitle = 'Quadratic Equations & Parabolas';
       let estMinutes = 35;
       let subject = 'Math';
@@ -143,12 +172,15 @@ export default async function handler(req: any, res: any) {
         `• Предмет: *${subject}*\n` +
         `• Тема: *${lessonTitle}*\n` +
         `• Длительность: *${estMinutes} минут*\n` +
-        `• Целевой балл: *${targetScore}*\n\n` +
-        `Бот будет присылать напоминание точно до начала каждого урока! 🚀`;
+        `• Целевой балл: *${targetScore}*\n` +
+        (dueCount > 0 ? `• Слов на повторение (SRS): *${dueCount}*\n` : '') +
+        wotdText +
+        `\nБот будет присылать напоминание точно до начала каждого урока! 🚀`;
 
       await sendTelegramMessage(conn.telegram_chat_id, testMsg, {
         inline_keyboard: [
           [{ text: '📚 Открыть урок', url: `${FRONTEND_URL}/learn` }],
+          [{ text: '🔤 Учить слова SAT', url: `${FRONTEND_URL}/vocabulary` }],
           [{ text: '📊 Личный кабинет', url: `${FRONTEND_URL}/dashboard` }],
         ],
       });
@@ -322,16 +354,31 @@ export default async function handler(req: any, res: any) {
           timeRemainingText = `через *${minutesUntilLesson} мин.* (в *${formattedLessonTime}*)`;
         }
 
+        // Check overdue vocabulary for this user
+        let vocabDueCount = 0;
+        try {
+          const { count } = await supabase
+            .from('user_vocabulary')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', conn.user_id)
+            .lte('next_review_at', new Date().toISOString());
+          vocabDueCount = count || 0;
+        } catch {
+          // table might not be populated
+        }
+
         const msg =
           `⏰ *Напоминание о занятии SAT!* 📖\n\n` +
           `Привет, ${studentName}! Твой урок начнется ${timeRemainingText}.\n\n` +
           `🎯 *Тема сегодняшнего урока:* ${lessonTitle}\n` +
-          `⏱ *Ориентировочное время:* ${estMinutes} минут\n\n` +
+          `⏱ *Ориентировочное время:* ${estMinutes} минут\n` +
+          (vocabDueCount > 0 ? `🔤 *Слов на повторение (SRS):* ${vocabDueCount} слов ждут тебя!\n\n` : '\n') +
           `Удели время сегодня, чтобы стабильно набрать свой целевой балл! 💪`;
 
         await sendTelegramMessage(conn.telegram_chat_id, msg, {
           inline_keyboard: [
             [{ text: '🚀 Начать урок сейчас', url: `${FRONTEND_URL}/learn` }],
+            [{ text: '🔤 Учить слова SAT', url: `${FRONTEND_URL}/vocabulary` }],
             [{ text: '📊 Мой прогресс', url: `${FRONTEND_URL}/progress` }],
           ],
         });

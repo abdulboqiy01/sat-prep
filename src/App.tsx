@@ -27,6 +27,14 @@ import { ProgressPage } from './pages/ProgressPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
+// Vocabulary Module Pages
+import { VocabularyDashboardPage } from './pages/vocabulary/VocabularyDashboardPage';
+import { LearnWordsPage } from './pages/vocabulary/LearnWordsPage';
+import { FlashcardsPage } from './pages/vocabulary/FlashcardsPage';
+import { PracticePage } from './pages/vocabulary/PracticePage';
+import { ReviewWordsPage } from './pages/vocabulary/ReviewWordsPage';
+import { MyVocabularyPage } from './pages/vocabulary/MyVocabularyPage';
+
 // Admin pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminStudentsPage } from './pages/admin/AdminStudentsPage';
@@ -70,6 +78,15 @@ export const App: React.FC = () => {
             <Route path="/learn/id/:lessonId" element={<LessonPlayerPage />} />
             <Route path="/lesson/:slug" element={<LessonPlayerPage />} />
             <Route path="/quiz/:quizId" element={<QuizPage />} />
+
+            {/* Vocabulary Module Routes */}
+            <Route path="/vocabulary" element={<VocabularyDashboardPage />} />
+            <Route path="/vocabulary/learn" element={<LearnWordsPage />} />
+            <Route path="/vocabulary/flashcards" element={<FlashcardsPage />} />
+            <Route path="/vocabulary/practice" element={<PracticePage />} />
+            <Route path="/vocabulary/review" element={<ReviewWordsPage />} />
+            <Route path="/vocabulary/my-vocabulary" element={<MyVocabularyPage />} />
+
             <Route path="/diagnostic" element={<DiagnosticPage />} />
             <Route path="/tutor" element={<TutorPage />} />
             <Route path="/progress" element={<ProgressPage />} />

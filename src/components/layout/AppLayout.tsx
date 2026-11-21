@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   Flame,
+  SpellCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PathwayBadge } from '../ui/Badge';
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
   { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
   { name: 'My Roadmap', to: '/roadmap', icon: Map },
   { name: 'Learn', to: '/learn', icon: BookOpen },
+  { name: 'Vocabulary', to: '/vocabulary', icon: SpellCheck },
   { name: 'AI Tutor', to: '/tutor', icon: MessageSquare },
   { name: 'Progress', to: '/progress', icon: BarChart3 },
   { name: 'Settings', to: '/settings', icon: Settings },
