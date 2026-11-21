@@ -23,7 +23,8 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { cn } from '../utils/cn';
 
 export const QuizPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { quizId, id } = useParams<{ quizId?: string; id?: string }>();
+  const activeQuizId = quizId || id;
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -42,7 +43,7 @@ export const QuizPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const startNewQuiz = async () => {
-    if (!id) return;
+    if (!activeQuizId) return;
     try {
       setLoading(true);
       setErrorMsg(null);
@@ -51,8 +52,8 @@ export const QuizPage: React.FC = () => {
       setCurrentIndex(0);
 
       const [takingData, attempt] = await Promise.all([
-        QuizService.getQuizForTaking(id),
-        QuizService.startAttempt(id),
+        QuizService.getQuizForTaking(activeQuizId),
+        QuizService.startAttempt(activeQuizId),
       ]);
 
       setQuiz(takingData.quiz);
@@ -67,7 +68,7 @@ export const QuizPage: React.FC = () => {
 
   useEffect(() => {
     startNewQuiz();
-  }, [id]);
+  }, [activeQuizId]);
 
   const handleSelectOption = (questionId: string, optionId: string) => {
     setSelectedAnswers((prev) => ({

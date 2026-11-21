@@ -312,9 +312,19 @@ export default async function handler(req: any, res: any) {
         const studentName = profile?.full_name || 'Студент';
         const formattedLessonTime = `${String(rHour).padStart(2, '0')}:${String(rMinute).padStart(2, '0')}`;
 
+        // Calculate actual real-time remaining minutes to avoid confusion if cron triggers with a delay
+        const minutesUntilLesson = lessonMinutesFromMidnight - currentMinutesFromMidnight;
+        let timeRemainingText = `через *${reminderBefore} минут* (в *${formattedLessonTime}*)`;
+
+        if (minutesUntilLesson <= 1 && minutesUntilLesson >= -5) {
+          timeRemainingText = `*прямо сейчас* (в *${formattedLessonTime}*)`;
+        } else if (minutesUntilLesson > 1 && minutesUntilLesson < reminderBefore) {
+          timeRemainingText = `через *${minutesUntilLesson} мин.* (в *${formattedLessonTime}*)`;
+        }
+
         const msg =
           `⏰ *Напоминание о занятии SAT!* 📖\n\n` +
-          `Привет, ${studentName}! Твой урок начнется через *${reminderBefore} минут* (в *${formattedLessonTime}*).\n\n` +
+          `Привет, ${studentName}! Твой урок начнется ${timeRemainingText}.\n\n` +
           `🎯 *Тема сегодняшнего урока:* ${lessonTitle}\n` +
           `⏱ *Ориентировочное время:* ${estMinutes} минут\n\n` +
           `Удели время сегодня, чтобы стабильно набрать свой целевой балл! 💪`;

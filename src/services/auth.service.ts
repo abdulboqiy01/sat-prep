@@ -170,6 +170,13 @@ export class AuthService {
   ): Promise<Profile> {
     const user = await this.getCurrentUser();
 
+    // If full_name is updated, synchronize it with Supabase Auth metadata as well
+    if (updates.full_name) {
+      await supabase.auth.updateUser({
+        data: { full_name: updates.full_name },
+      });
+    }
+
     const { data, error } = await supabase
       .from('profiles')
       .update(updates)
