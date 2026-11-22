@@ -30,7 +30,9 @@ export const LoginPage: React.FC = () => {
       setAuthError(null);
       await AuthService.login(data);
       const userProfile = await AuthService.getProfile().catch(() => null);
-      if (!userProfile?.target_score) {
+      if (userProfile?.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else if (!userProfile?.target_score) {
         navigate('/onboarding', { replace: true });
       } else {
         navigate(from, { replace: true });
