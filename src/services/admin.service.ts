@@ -27,11 +27,15 @@ export interface LessonRow {
   slug: string;
   module_id: string | null;
   module_title: string | null;
+  skill_id?: string | null;
   subject: string | null;
   pathway: string | null;
   estimated_duration_minutes: number;
   difficulty: string;
   order_index: number;
+  summary?: string | null;
+  content?: any;
+  is_published?: boolean;
 }
 
 export interface WeeklyActivity {
@@ -144,7 +148,7 @@ export class AdminService {
   static async getAllLessons(): Promise<LessonRow[]> {
     const [lessonsRes, modulesRes] = await Promise.all([
       supabase.from('lessons').select('*').order('order_index', { ascending: true }),
-      supabase.from('lesson_modules').select('id, title'),
+      supabase.from('lesson_modules').select('id, title, subject, pathway'),
     ]);
 
     if (lessonsRes.error) throw lessonsRes.error;
@@ -157,19 +161,194 @@ export class AdminService {
       slug: l.slug,
       module_id: l.module_id,
       module_title: l.module_id ? moduleMap.get(l.module_id) ?? null : null,
+      skill_id: l.skill_id,
       subject: l.subject,
       pathway: l.pathway,
       estimated_duration_minutes: l.estimated_duration_minutes,
       difficulty: l.difficulty,
       order_index: l.order_index,
+      summary: l.summary,
+      content: l.content,
+      is_published: l.is_published,
     }));
+  }
+
+  static async getModulesAndSkills(): Promise<{
+    modules: { id: string; title: string; subject: string; pathway: string }[];
+    skills: { id: string; name: string; subject: string; pathway: string }[];
+  }> {
+    const [modRes, skillRes] = await Promise.all([
+      supabase.from('lesson_modules').select('id, title, subject, pathway').order('order_index'),
+      supabase.from('skills').select('id, name, subject, pathway').order('name'),
+    ]);
+    return {
+      modules: modRes.data || [],
+      skills: skillRes.data || [],
+    };
+  }
+
+  static async createLesson(input: {
+    title: string;
+    subject: string;
+    pathway: string;
+    summary?: string;
+    estimated_duration_minutes?: number;
+    difficulty?: string;
+    module_id?: string;
+    skill_id?: string;
+    order_index?: number;
+    content?: any;
+  }): Promise<LessonRow> {
+    let slug = input.title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    if (!slug) slug = 'lesson-' + Date.now();
+
+    // Ensure unique slug
+    const { data: existing } = await supabase.from('lessons').select('id').eq('slug', slug).maybeSingle();
+    if (existing) {
+      slug = `${slug}-${Math.floor(Math.random() * 1000)}`;
+    }
+
+    // Fallback module_id if none provided
+    let moduleId = input.module_id;
+    if (!moduleId) {
+      const { data: mod } = await supabase
+        .from('lesson_modules')
+        .select('id')
+        .eq('subject', input.subject as any)
+        .limit(1)
+        .maybeSingle();
+      moduleId = mod?.id;
+    }
+
+    // Fallback skill_id if none provided
+    let skillId = input.skill_id;
+    if (!skillId) {
+      const { data: sk } = await supabase
+        .from('skills')
+        .select('id')
+        .eq('subject', input.subject as any)
+        .limit(1)
+        .maybeSingle();
+      skillId = sk?.id || '10000000-0000-0000-0000-000000000001';
+    }
+
+    const defaultContent = input.content || {
+      sections: [
+        {
+          slide_number: 1,
+          type: 'concept',
+          title: 'Introduction & Core Foundations',
+          body: input.summary || 'Fundamental rules and key principles required for this SAT topic.',
+        },
+        {
+          slide_number: 2,
+          type: 'deep_dive',
+          title: 'Step-by-Step Breakdown',
+          body: 'Detailed breakdown of standard question formats, strategic patterns, and mathematical/grammatical properties.',
+        },
+        {
+          slide_number: 3,
+          type: 'example',
+          title: 'Official SAT-Style Walkthrough',
+          body: 'Full worked example demonstrating the most efficient solving strategy to avoid common trap choices.',
+        },
+        {
+          slide_number: 4,
+          type: 'traps',
+          title: 'Common Traps & Speed Shortcuts',
+          body: 'Common pitfalls set by College Board and speed tips to solve in under 45 seconds.',
+        },
+        {
+          slide_number: 5,
+          type: 'homework',
+          title: 'Guided Practice & Homework Assignment',
+          body: 'Review key takeaways and test yourself with the homework practice problems before the quiz.',
+        },
+        {
+          slide_number: 6,
+          type: 'quiz_intro',
+          title: 'Topic Mastery Quiz',
+          body: 'Complete the mini quiz to solidify retention and earn mastery points towards your target SAT score.',
+        },
+      ],
+      key_takeaways: [
+        'Understand the core pattern tested on the Digital SAT',
+        'Eliminate distractor options methodically',
+        'Practice timed pacing for exam day accuracy',
+      ],
+    };
+
+    const duration = Number(input.estimated_duration_minutes) || 30;
+    const orderIndex = Number(input.order_index) || 1;
+
+    const insertPayload: any = {
+      title: input.title,
+      slug,
+      subject: input.subject,
+      pathway: input.pathway,
+      module_id: moduleId,
+      skill_id: skillId,
+      summary: input.summary || input.title,
+      content: defaultContent,
+      estimated_duration_minutes: duration,
+      difficulty: input.difficulty || 'medium',
+      order_index: orderIndex,
+      is_published: true,
+    };
+
+    const { data, error } = await supabase
+      .from('lessons')
+      .insert(insertPayload)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      title: data.title,
+      slug: data.slug,
+      module_id: data.module_id,
+      module_title: null,
+      skill_id: data.skill_id,
+      subject: data.subject,
+      pathway: data.pathway,
+      estimated_duration_minutes: data.estimated_duration_minutes,
+      difficulty: data.difficulty,
+      order_index: data.order_index,
+      summary: data.summary,
+      content: data.content,
+      is_published: data.is_published,
+    };
   }
 
   static async updateLesson(
     lessonId: string,
-    updates: { title?: string; estimated_duration_minutes?: number }
+    updates: Partial<LessonRow> & {
+      summary?: string;
+      difficulty?: string;
+      subject?: string;
+      pathway?: string;
+      content?: any;
+      module_id?: string | null;
+      skill_id?: string | null;
+    }
   ): Promise<void> {
-    const { error } = await supabase.from('lessons').update(updates).eq('id', lessonId);
+    const cleanUpdates: any = { ...updates };
+    delete cleanUpdates.module_title;
+    delete cleanUpdates.id;
+    if (cleanUpdates.skill_id === null) delete cleanUpdates.skill_id;
+
+    const { error } = await supabase.from('lessons').update(cleanUpdates).eq('id', lessonId);
+    if (error) throw error;
+  }
+
+  static async deleteLesson(lessonId: string): Promise<void> {
+    const { error } = await supabase.from('lessons').delete().eq('id', lessonId);
     if (error) throw error;
   }
 

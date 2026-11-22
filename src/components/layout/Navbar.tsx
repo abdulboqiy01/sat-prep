@@ -6,7 +6,7 @@ import { BrandLogo } from '../ui/BrandLogo';
 import { useAuth } from '../../context/AuthContext';
 
 export const Navbar: React.FC = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -31,10 +31,10 @@ export const Navbar: React.FC = () => {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate(profile?.role === 'admin' ? '/admin' : '/dashboard')}
               className="gap-2"
             >
-              <Sparkles className="w-4 h-4" /> Go to Dashboard
+              <Sparkles className="w-4 h-4" /> {profile?.role === 'admin' ? 'Go to Admin Panel' : 'Go to Dashboard'}
             </Button>
           ) : (
             <>

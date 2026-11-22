@@ -22,12 +22,17 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // If user is Admin and attempting to visit non-admin student routes, immediately redirect straight to /admin
+  if (profile?.role === 'admin' && !location.pathname.startsWith('/admin')) {
+    return <Navigate to="/admin" replace />;
+  }
+
   // If student has not completed onboarding yet, enforce redirection to /onboarding
   const isOnboardingOrDiagnostic =
     location.pathname === '/onboarding' || location.pathname === '/diagnostic';
   const hasCompletedOnboarding = !!profile?.target_score && !!preferences;
 
-  if (!hasCompletedOnboarding && !isOnboardingOrDiagnostic) {
+  if (profile?.role !== 'admin' && !hasCompletedOnboarding && !isOnboardingOrDiagnostic) {
     return <Navigate to="/onboarding" replace />;
   }
 
