@@ -12,6 +12,7 @@ import {
   X,
   Flame,
   SpellCheck,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PathwayBadge } from '../ui/Badge';
@@ -108,6 +109,17 @@ export const AppLayout: React.FC = () => {
                     {item.name}
                   </NavLink>
                 ))}
+
+                {profile?.role === 'admin' && (
+                  <NavLink
+                    to="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition mt-2"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                    Admin Panel
+                  </NavLink>
+                )}
               </nav>
             </div>
 
@@ -168,6 +180,16 @@ export const AppLayout: React.FC = () => {
                 {item.name}
               </NavLink>
             ))}
+
+            {profile?.role === 'admin' && (
+              <NavLink
+                to="/admin"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-indigo-700 bg-indigo-50/80 border border-indigo-200/80 hover:bg-indigo-100 transition-colors duration-150 mt-3 shadow-2xs"
+              >
+                <ShieldCheck className="w-4 h-4 shrink-0 text-indigo-600" />
+                Admin Panel
+              </NavLink>
+            )}
           </nav>
         </div>
 
