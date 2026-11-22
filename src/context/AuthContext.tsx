@@ -71,8 +71,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     if (user) {
-      const p = await AuthService.getProfile(user.id);
-      setProfile(p);
+      const [p, pref] = await Promise.all([
+        AuthService.getProfile(user.id).catch(() => null),
+        OnboardingService.getPreferences().catch(() => null),
+      ]);
+      if (p) setProfile(p);
+      if (pref) setPreferences(pref);
     }
   };
 

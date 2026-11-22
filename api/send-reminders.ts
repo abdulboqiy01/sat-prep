@@ -267,9 +267,25 @@ export default async function handler(req: any, res: any) {
           localDateStr = now.toISOString().split('T')[0];
         }
 
-        // Check study days
-        if (settings?.study_days && settings.study_days.length > 0) {
-          const isStudyDay = settings.study_days.some(
+        // Check study days (check reminder_settings first, then fallback to student_preferences)
+        let effectiveStudyDays: string[] = settings?.study_days || [];
+        if (effectiveStudyDays.length === 0) {
+          try {
+            const { data: pref } = await supabase
+              .from('student_preferences')
+              .select('preferred_study_days')
+              .eq('user_id', conn.user_id)
+              .maybeSingle();
+            if (pref?.preferred_study_days && Array.isArray(pref.preferred_study_days)) {
+              effectiveStudyDays = pref.preferred_study_days;
+            }
+          } catch {
+            // fallback if table query fails
+          }
+        }
+
+        if (effectiveStudyDays.length > 0) {
+          const isStudyDay = effectiveStudyDays.some(
             (d: string) => d.toLowerCase() === localDay
           );
           if (!isStudyDay) continue; // Today is not a study day for this student
@@ -285,9 +301,12 @@ export default async function handler(req: any, res: any) {
         const targetNotifyMinutes = lessonMinutesFromMidnight - reminderBefore;
         const currentMinutesFromMidnight = localHour * 60 + localMinute;
 
-        // Window check: if current time is within [-5, +14] minutes of the scheduled reminder time
+        // Window check:
+        // Trigger once local time reaches targetNotifyMinutes - 5 and within the evening window (up to 360 mins).
+        // Since we check `alreadySent` today below, this reliably fires on the first cron run after target time
+        // even if GitHub Actions runner or Vercel cron has a delay!
         const diff = currentMinutesFromMidnight - targetNotifyMinutes;
-        const isInNotificationWindow = diff >= -5 && diff <= 15;
+        const isInNotificationWindow = diff >= -5 && diff <= 360;
 
         // Only send if we are in the time window (or if manually triggered with bypass)
         if (!isInNotificationWindow && payload.force !== true) {
@@ -350,8 +369,10 @@ export default async function handler(req: any, res: any) {
 
         if (minutesUntilLesson <= 1 && minutesUntilLesson >= -5) {
           timeRemainingText = `*прямо сейчас* (в *${formattedLessonTime}*)`;
-        } else if (minutesUntilLesson > 1 && minutesUntilLesson < reminderBefore) {
+        } else if (minutesUntilLesson > 1) {
           timeRemainingText = `через *${minutesUntilLesson} мин.* (в *${formattedLessonTime}*)`;
+        } else {
+          timeRemainingText = `на сегодня (запланировано на *${formattedLessonTime}*)`;
         }
 
         // Check overdue vocabulary for this user
@@ -367,9 +388,14 @@ export default async function handler(req: any, res: any) {
           // table might not be populated
         }
 
+        const isPastLesson = minutesUntilLesson < -5;
+        const greetingLine = isPastLesson
+          ? `Привет, ${studentName}! Напоминаем о сегодняшнем занятии SAT (запланировано на ${formattedLessonTime}).`
+          : `Привет, ${studentName}! Твой урок начнется ${timeRemainingText}.`;
+
         const msg =
           `⏰ *Напоминание о занятии SAT!* 📖\n\n` +
-          `Привет, ${studentName}! Твой урок начнется ${timeRemainingText}.\n\n` +
+          `${greetingLine}\n\n` +
           `🎯 *Тема сегодняшнего урока:* ${lessonTitle}\n` +
           `⏱ *Ориентировочное время:* ${estMinutes} минут\n` +
           (vocabDueCount > 0 ? `🔤 *Слов на повторение (SRS):* ${vocabDueCount} слов ждут тебя!\n\n` : '\n') +

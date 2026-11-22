@@ -58,7 +58,7 @@ const COMMON_TIMEZONES = [
 ];
 
 export const SettingsPage: React.FC = () => {
-  const { user, profile, preferences, refreshProfile, logout } = useAuth();
+  const { user, profile, preferences, refreshProfile, refreshPreferences, logout } = useAuth();
 
   // Profile Form state
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -102,6 +102,7 @@ export const SettingsPage: React.FC = () => {
   const [recentLogs, setRecentLogs] = useState<NotificationLog[]>([]);
 
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isPrefsInitializedRef = useRef(false);
 
   // Password Update state
   const [newPassword, setNewPassword] = useState('');
@@ -111,16 +112,19 @@ export const SettingsPage: React.FC = () => {
   const [pwdError, setPwdError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profile) {
-      setFullName(profile.full_name || '');
-      setTargetScore(profile.target_score || 1400);
-      setTargetMathScore(profile.target_math_score || 700);
-      setTargetRwScore(profile.target_rw_score || 700);
-      setTargetExamDate(profile.target_exam_date || '');
-      setPathway(preferences?.preferred_pathway || profile.starting_level || 'pre_sat');
-    }
-    if (preferences?.preferred_study_days) {
-      setStudyDays(preferences.preferred_study_days);
+    if (!isPrefsInitializedRef.current && (profile || preferences)) {
+      if (profile) {
+        setFullName(profile.full_name || '');
+        setTargetScore(profile.target_score || 1400);
+        setTargetMathScore(profile.target_math_score || 700);
+        setTargetRwScore(profile.target_rw_score || 700);
+        setTargetExamDate(profile.target_exam_date || '');
+        setPathway(preferences?.preferred_pathway || profile.starting_level || 'pre_sat');
+      }
+      if (preferences?.preferred_study_days && preferences.preferred_study_days.length > 0) {
+        setStudyDays(preferences.preferred_study_days);
+      }
+      isPrefsInitializedRef.current = true;
     }
   }, [profile, preferences]);
 
@@ -181,23 +185,33 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleToggleDay = (dayId: string) => {
+    let nextDays: string[];
     if (studyDays.includes(dayId)) {
       if (studyDays.length > 1) {
-        setStudyDays(studyDays.filter((d) => d !== dayId));
+        nextDays = studyDays.filter((d) => d !== dayId);
+      } else {
+        nextDays = studyDays;
       }
     } else {
-      setStudyDays([...studyDays, dayId]);
+      nextDays = [...studyDays, dayId];
     }
+    setStudyDays(nextDays);
+    setReminderDays(nextDays);
   };
 
   const handleToggleReminderDay = (dayId: string) => {
+    let nextDays: string[];
     if (reminderDays.includes(dayId)) {
       if (reminderDays.length > 1) {
-        setReminderDays(reminderDays.filter((d) => d !== dayId));
+        nextDays = reminderDays.filter((d) => d !== dayId);
+      } else {
+        nextDays = reminderDays;
       }
     } else {
-      setReminderDays([...reminderDays, dayId]);
+      nextDays = [...reminderDays, dayId];
     }
+    setReminderDays(nextDays);
+    setStudyDays(nextDays);
   };
 
   const handleUpdatePreferences = async (e: React.FormEvent) => {
@@ -220,7 +234,31 @@ export const SettingsPage: React.FC = () => {
         preferred_pathway: pathway as any,
       });
 
-      await refreshProfile();
+      // Keep studyDays state firmly set
+      setStudyDays([...studyDays]);
+
+      // Automatically sync Telegram reminder settings if telegram is connected!
+      if (tgConnection && tgConnection.is_active) {
+        try {
+          const timeWithSeconds = reminderTime.length === 5 ? `${reminderTime}:00` : reminderTime;
+          await TelegramService.updateReminderSettings({
+            enabled: remindersEnabled,
+            reminder_time: timeWithSeconds,
+            timezone: reminderTz,
+            study_days: studyDays,
+            reminder_before_minutes: reminderLeadMinutes,
+          });
+          setReminderDays([...studyDays]);
+        } catch (tgErr) {
+          console.warn('Could not sync telegram reminder settings:', tgErr);
+        }
+      }
+
+      await Promise.all([
+        refreshProfile(),
+        refreshPreferences?.(),
+      ]);
+
       setPrefsSuccess(true);
       setTimeout(() => setPrefsSuccess(false), 3000);
     } catch (err: any) {

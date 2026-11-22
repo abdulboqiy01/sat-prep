@@ -62,3 +62,4 @@ SET content = jsonb_build_object(
     )
 )
 WHERE slug = 'solving-single-variable-linear-equations';
+
