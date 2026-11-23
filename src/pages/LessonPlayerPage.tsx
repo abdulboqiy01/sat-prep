@@ -147,7 +147,7 @@ export const LessonPlayerPage: React.FC = () => {
           to="/learn"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
         >
-          <ArrowLeft className="w-4 h-4" /> Назад к урокам
+          <ArrowLeft className="w-4 h-4" /> Back to Lessons
         </Link>
 
         {/* Ask AI Tutor CTA */}
@@ -157,7 +157,7 @@ export const LessonPlayerPage: React.FC = () => {
           onClick={() => navigate(`/tutor?context_type=lesson&context_id=${lesson.id}`)}
           className="gap-2 text-xs"
         >
-          <Sparkles className="w-3.5 h-3.5 text-brand-600" /> Задать вопрос ИИ-тьютору
+          <Sparkles className="w-3.5 h-3.5 text-brand-600" /> Ask AI Tutor
         </Button>
       </div>
 
@@ -195,7 +195,7 @@ export const LessonPlayerPage: React.FC = () => {
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5 font-medium">
             <span className="flex items-center gap-2">
               <span className="font-bold text-slate-800">
-                Слайд {currentStep + 1} из {totalSteps}
+                Slide {currentStep + 1} of {totalSteps}
               </span>
               {currentSection.badge && (
                 <span className="bg-brand-50 text-brand-700 px-2 py-0.5 rounded-md font-semibold text-[11px]">
@@ -204,7 +204,7 @@ export const LessonPlayerPage: React.FC = () => {
               )}
             </span>
             <span>
-              {completed ? 'Пройдено' : `${Math.round(((currentStep + 1) / Math.max(totalSteps, 1)) * 100)}%`}
+              {completed ? 'Completed' : `${Math.round(((currentStep + 1) / Math.max(totalSteps, 1)) * 100)}%`}
             </span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
@@ -225,7 +225,7 @@ export const LessonPlayerPage: React.FC = () => {
           <div className="border-b border-slate-100 pb-4">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-bold text-brand-600 uppercase tracking-widest">
-                Слайд {currentStep + 1} из {totalSteps}
+                Slide {currentStep + 1} of {totalSteps}
               </span>
               {currentSection.badge && (
                 <span className="text-xs font-semibold text-slate-400">
@@ -250,7 +250,7 @@ export const LessonPlayerPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs sm:text-sm text-amber-900 leading-relaxed flex items-start gap-3">
                 <FileText className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="font-bold">Домашнее задание перед тестом: </strong>
+                  <strong className="font-bold">Homework Practice: </strong>
                   <span>{currentSection.content}</span>
                 </div>
               </div>
@@ -270,7 +270,7 @@ export const LessonPlayerPage: React.FC = () => {
                             {task.id}
                           </span>
                           <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                            Упражнение {task.id}
+                            Practice Problem {task.id}
                           </span>
                         </div>
                         <button
@@ -279,7 +279,7 @@ export const LessonPlayerPage: React.FC = () => {
                           className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1.5 transition bg-white px-2.5 py-1 rounded-lg border border-slate-200/80 shadow-2xs"
                         >
                           {isRevealed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                          <span>{isRevealed ? 'Скрыть решение' : 'Показать решение'}</span>
+                          <span>{isRevealed ? 'Hide Solution' : 'Show Solution'}</span>
                         </button>
                       </div>
 
@@ -291,7 +291,7 @@ export const LessonPlayerPage: React.FC = () => {
                         <div className="p-3 bg-white/90 border border-slate-200/80 rounded-xl text-xs text-slate-600 flex items-start gap-2">
                           <HelpCircle className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />
                           <div>
-                            <strong className="text-slate-800">Подсказка: </strong>
+                            <strong className="text-slate-800">Hint: </strong>
                             <span>{task.hint}</span>
                           </div>
                         </div>
@@ -301,14 +301,14 @@ export const LessonPlayerPage: React.FC = () => {
                         <div className="p-4 bg-emerald-50/90 border border-emerald-200 rounded-xl text-xs sm:text-sm text-emerald-950 space-y-2 animate-in fade-in duration-200">
                           <div className="font-bold text-emerald-900 flex items-center gap-1.5">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            <span>Пошаговый ход решения:</span>
+                            <span>Step-by-Step Solution:</span>
                           </div>
                           <div className="leading-relaxed text-slate-800">
                             <MathRenderer text={task.solution} />
                           </div>
                           {task.correctAnswer && (
                             <div className="pt-2 border-t border-emerald-200/60 text-xs font-bold text-emerald-900 flex items-center gap-2">
-                              <span>Правильный ответ:</span>
+                              <span>Correct Answer:</span>
                               <span className="bg-emerald-200/90 text-emerald-900 px-2.5 py-0.5 rounded-md font-mono text-xs">
                                 {task.correctAnswer}
                               </span>
@@ -334,7 +334,7 @@ export const LessonPlayerPage: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Главные правила и формулы урока:</span>
+                  <span>Key Rules & Formulas:</span>
                 </div>
                 <div className="space-y-2.5">
                   {keyTakeaways.map((takeaway: string, idx: number) => (
@@ -356,14 +356,14 @@ export const LessonPlayerPage: React.FC = () => {
                 <div className="p-6 bg-gradient-to-r from-brand-50 to-indigo-50 border-2 border-brand-200 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 mt-6 shadow-sm">
                   <div className="space-y-1.5">
                     <div className="inline-flex items-center gap-1.5 bg-brand-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                      <Award className="w-3.5 h-3.5" /> Проверочный тест готов
+                      <Award className="w-3.5 h-3.5" /> Mastery Quiz Ready
                     </div>
                     <h4 className="font-extrabold text-slate-900 text-lg">
                       {associatedQuiz.title}
                     </h4>
                     <p className="text-xs text-slate-600">
-                      Для подтверждения навыка в Roadmap необходимо набрать не менее{' '}
-                      <strong>{associatedQuiz.passing_score_percent}%</strong> правильных ответов.
+                      Score at least{' '}
+                      <strong>{associatedQuiz.passing_score_percent}%</strong> to demonstrate skill mastery on your Roadmap.
                     </p>
                   </div>
                   <Button
@@ -372,12 +372,12 @@ export const LessonPlayerPage: React.FC = () => {
                     onClick={() => navigate(`/quiz/${associatedQuiz.id}`)}
                     className="shrink-0 gap-2 font-extrabold text-sm shadow-md hover:scale-105 transition"
                   >
-                    <Award className="w-5 h-5" /> Начать Mini-Quiz
+                    <Award className="w-5 h-5" /> Start Mini-Quiz
                   </Button>
                 </div>
               ) : (
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600">
-                  Все слайды пройдены! Вы можете завершить урок или вернуться к повторению домашнего задания.
+                  All slides completed! You can complete this lesson or review the practice exercises.
                 </div>
               )}
             </div>
@@ -400,7 +400,7 @@ export const LessonPlayerPage: React.FC = () => {
             disabled={currentStep === 0}
             className="gap-1.5 text-xs font-semibold"
           >
-            <ArrowLeft className="w-4 h-4" /> Назад
+            <ArrowLeft className="w-4 h-4" /> Previous
           </Button>
 
           {currentStep < totalSteps - 1 ? (
@@ -412,11 +412,11 @@ export const LessonPlayerPage: React.FC = () => {
               className="gap-2 font-bold text-xs"
             >
               {currentStep === totalSteps - 2 ? (
-                <>Итоги и Mini-Quiz <ArrowRight className="w-4 h-4" /></>
+                <>Summary & Quiz <ArrowRight className="w-4 h-4" /></>
               ) : currentStep === totalSteps - 3 ? (
-                <>К домашнему заданию (ДЗ) <ArrowRight className="w-4 h-4" /></>
+                <>To Homework Practice <ArrowRight className="w-4 h-4" /></>
               ) : (
-                <>Следующий слайд <ArrowRight className="w-4 h-4" /></>
+                <>Next Slide <ArrowRight className="w-4 h-4" /></>
               )}
             </Button>
           ) : (
@@ -428,7 +428,7 @@ export const LessonPlayerPage: React.FC = () => {
                   onClick={() => navigate(`/quiz/${associatedQuiz.id}`)}
                   className="gap-2 font-bold text-xs"
                 >
-                  <Award className="w-4 h-4" /> Начать Mini-Quiz
+                  <Award className="w-4 h-4" /> Start Mini-Quiz
                 </Button>
               )}
               <Button
@@ -438,7 +438,7 @@ export const LessonPlayerPage: React.FC = () => {
                 isLoading={isSaving}
                 className="gap-2 font-semibold text-xs"
               >
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Отметить завершенным
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Mark as Completed
               </Button>
             </div>
           )}

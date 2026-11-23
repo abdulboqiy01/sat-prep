@@ -1,5 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
+import {
+  I18N,
+  parseTimezoneAndLang,
+  getLanguageKeyboard,
+  type BotLanguage,
+} from './telegram-i18n';
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL ||
@@ -43,6 +49,22 @@ async function sendTelegramMessage(
   }
 }
 
+async function answerCallbackQuery(callbackQueryId: string, text?: string) {
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        callback_query_id: callbackQueryId,
+        text,
+      }),
+    });
+  } catch (err: any) {
+    console.error('Failed to answer callback query:', err.message);
+  }
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method === 'GET') {
     return res.status(200).json({ status: 'SATPrep Telegram Webhook is active' });
@@ -54,15 +76,15 @@ export default async function handler(req: any, res: any) {
 
   try {
     const update = req.body;
-    const message = update?.message;
+    const callbackQuery = update?.callback_query;
+    const message = update?.message || callbackQuery?.message;
 
-    if (!message || !message.text) {
+    if (!callbackQuery && (!message || !message.text)) {
       return res.status(200).json({ status: 'ignored' });
     }
 
-    const chatId = message.chat.id;
-    const text = message.text.trim();
-    const fromUser = message.from || {};
+    const chatId = callbackQuery ? callbackQuery.message?.chat?.id : message.chat.id;
+    const fromUser = callbackQuery ? callbackQuery.from : message.from || {};
     const telegramUsername = fromUser.username || null;
     const firstName = fromUser.first_name || 'Student';
 
@@ -70,10 +92,117 @@ export default async function handler(req: any, res: any) {
       auth: { persistSession: false },
     });
 
-    const [command, ...args] = text.split(' ');
-    const param = args.join(' ').trim();
+    // Helper to determine the user's current saved language (defaulting to 'en')
+    async function getUserLanguageAndSettings(): Promise<{
+      userId: string | null;
+      language: BotLanguage;
+      timezone: string;
+      settings: any;
+    }> {
+      const { data: conn } = await supabase
+        .from('telegram_connections')
+        .select('user_id')
+        .eq('telegram_chat_id', chatId)
+        .eq('is_active', true)
+        .maybeSingle();
 
-    // 1. /start [token]
+      if (!conn?.user_id) {
+        return { userId: null, language: 'en', timezone: 'Asia/Tashkent', settings: null };
+      }
+
+      const { data: setts } = await supabase
+        .from('reminder_settings')
+        .select('*')
+        .eq('user_id', conn.user_id)
+        .maybeSingle();
+
+      const { timezone, language } = parseTimezoneAndLang(setts?.timezone);
+      return { userId: conn.user_id, language, timezone, settings: setts };
+    }
+
+    // Helper to save language
+    async function saveUserLanguage(newLang: BotLanguage, userId?: string | null) {
+      if (userId) {
+        const { data: currentSetts } = await supabase
+          .from('reminder_settings')
+          .select('timezone')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        const currentTz = (currentSetts?.timezone || 'Asia/Tashkent').split('#')[0];
+        await supabase
+          .from('reminder_settings')
+          .update({ timezone: `${currentTz}#${newLang}` })
+          .eq('user_id', userId);
+      }
+    }
+
+    // =========================================================================
+    // 0. Handle Inline Button Callback Queries (Language Switcher)
+    // =========================================================================
+    if (callbackQuery) {
+      const data = callbackQuery.data || '';
+
+      if (data.startsWith('set_lang_')) {
+        const selectedLang = data.replace('set_lang_', '') as BotLanguage;
+        const validLang: BotLanguage = selectedLang === 'ru' || selectedLang === 'uz' ? selectedLang : 'en';
+
+        const { userId } = await getUserLanguageAndSettings();
+        await saveUserLanguage(validLang, userId);
+
+        const t = I18N[validLang];
+        await answerCallbackQuery(callbackQuery.id, `Language: ${t.langName}`);
+
+        await sendTelegramMessage(chatId, t.languageChanged, {
+          inline_keyboard: [
+            [{ text: t.btnDashboard, url: `${FRONTEND_URL}/dashboard` }],
+            [{ text: t.btnStartLearning, url: `${FRONTEND_URL}/learn` }],
+            [{ text: t.btnChangeLang, callback_data: 'open_lang_menu' }],
+          ],
+        });
+        return res.status(200).json({ ok: true });
+      }
+
+      if (data === 'open_lang_menu') {
+        await answerCallbackQuery(callbackQuery.id);
+        const { language } = await getUserLanguageAndSettings();
+        const t = I18N[language];
+        await sendTelegramMessage(chatId, t.chooseLanguage, getLanguageKeyboard());
+        return res.status(200).json({ ok: true });
+      }
+    }
+
+    // =========================================================================
+    // Parse Text Commands
+    // =========================================================================
+    const text = (message.text || '').trim();
+    const [command, ...args] = text.split(' ');
+    const param = args.join(' ').trim().toLowerCase();
+
+    const { userId, language: currentLang, settings } = await getUserLanguageAndSettings();
+    const t = I18N[currentLang];
+
+    // 1. /language or /lang
+    if (command === '/language' || command === '/lang') {
+      if (param === 'en' || param === 'ru' || param === 'uz') {
+        const newLang = param as BotLanguage;
+        await saveUserLanguage(newLang, userId);
+        const newT = I18N[newLang];
+        await sendTelegramMessage(chatId, newT.languageChanged, {
+          inline_keyboard: [
+            [{ text: newT.btnDashboard, url: `${FRONTEND_URL}/dashboard` }],
+            [{ text: newT.btnStartLearning, url: `${FRONTEND_URL}/learn` }],
+            [{ text: newT.btnChangeLang, callback_data: 'open_lang_menu' }],
+          ],
+        });
+        return res.status(200).json({ ok: true });
+      }
+
+      await sendTelegramMessage(chatId, t.chooseLanguage, getLanguageKeyboard());
+      return res.status(200).json({ ok: true });
+    }
+
+    // 2. /start [token]
     if (command === '/start') {
       if (param) {
         const tokenHash = sha256Hex(param);
@@ -86,41 +215,29 @@ export default async function handler(req: any, res: any) {
           .maybeSingle();
 
         if (tokenError || !tokenRow) {
-          await sendTelegramMessage(
-            chatId,
-            `⚠️ *Invalid Linking Link*\n\nThis connection link was not found. Please log in to SATPrep, go to **Settings**, and generate a fresh link.`,
-            {
-              inline_keyboard: [
-                [{ text: '🌐 Go to SATPrep Settings', url: `${FRONTEND_URL}/settings` }],
-              ],
-            }
-          );
+          await sendTelegramMessage(chatId, t.invalidToken, {
+            inline_keyboard: [
+              [{ text: t.btnConnectSettings, url: `${FRONTEND_URL}/settings` }],
+            ],
+          });
           return res.status(200).json({ ok: true });
         }
 
         if (tokenRow.used_at) {
-          await sendTelegramMessage(
-            chatId,
-            `⚠️ *Token Already Used*\n\nThis single-use code has already been redeemed. If you need to re-link, click "Connect Telegram" in Settings.`,
-            {
-              inline_keyboard: [
-                [{ text: '🌐 Go to Settings', url: `${FRONTEND_URL}/settings` }],
-              ],
-            }
-          );
+          await sendTelegramMessage(chatId, t.tokenUsed, {
+            inline_keyboard: [
+              [{ text: t.btnConnectSettings, url: `${FRONTEND_URL}/settings` }],
+            ],
+          });
           return res.status(200).json({ ok: true });
         }
 
         if (new Date(tokenRow.expires_at) < new Date()) {
-          await sendTelegramMessage(
-            chatId,
-            `⏳ *Token Expired*\n\nLinking tokens expire after 10 minutes for your security. Please click "Connect Telegram" again in SATPrep.`,
-            {
-              inline_keyboard: [
-                [{ text: '🌐 Generate New Link', url: `${FRONTEND_URL}/settings` }],
-              ],
-            }
-          );
+          await sendTelegramMessage(chatId, t.tokenExpired, {
+            inline_keyboard: [
+              [{ text: t.btnConnectSettings, url: `${FRONTEND_URL}/settings` }],
+            ],
+          });
           return res.status(200).json({ ok: true });
         }
 
@@ -130,25 +247,17 @@ export default async function handler(req: any, res: any) {
           .update({ used_at: nowIso })
           .eq('id', tokenRow.id);
 
-        const userId = tokenRow.user_id;
+        const newUserId = tokenRow.user_id;
 
-        // Unlink any old account previously attached to this Telegram chat ID
-        await supabase
-          .from('telegram_connections')
-          .delete()
-          .eq('telegram_chat_id', chatId);
-
-        // Also remove any existing connection for this user_id
-        await supabase
-          .from('telegram_connections')
-          .delete()
-          .eq('user_id', userId);
+        // Clean any old records
+        await supabase.from('telegram_connections').delete().eq('telegram_chat_id', chatId);
+        await supabase.from('telegram_connections').delete().eq('user_id', newUserId);
 
         // Insert new connection
         const { error: connInsertError } = await supabase
           .from('telegram_connections')
           .insert({
-            user_id: userId,
+            user_id: newUserId,
             telegram_chat_id: chatId,
             telegram_username: telegramUsername,
             connected_at: nowIso,
@@ -160,17 +269,17 @@ export default async function handler(req: any, res: any) {
           throw connInsertError;
         }
 
-        // Ensure default reminder settings exist
+        // Ensure default reminder settings exist with English as primary default
         await supabase
           .from('reminder_settings')
           .upsert(
             {
-              user_id: userId,
+              user_id: newUserId,
               enabled: true,
               reminder_time: '18:00:00',
-              timezone: 'UTC',
+              timezone: 'Asia/Tashkent#en',
               study_days: ['monday', 'wednesday', 'saturday'],
-              reminder_before_minutes: 30,
+              reminder_before_minutes: 15,
             },
             { onConflict: 'user_id' }
           )
@@ -181,31 +290,23 @@ export default async function handler(req: any, res: any) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name, target_score, starting_level')
-          .eq('id', userId)
+          .eq('id', newUserId)
           .single();
 
         const studentName = profile?.full_name || firstName;
         const target = profile?.target_score || 1400;
         const pathway = (profile?.starting_level || 'pre_sat').toUpperCase().replace('_', ' ');
 
+        // Welcome in default English (with quick buttons to change language)
+        const defT = I18N.en;
         await sendTelegramMessage(
           chatId,
-          `🎉 *Welcome to SATPrep, ${studentName}!* 🎓\n\n` +
-            `Your Telegram account is now successfully linked to your SATPrep dashboard!\n\n` +
-            `📋 *Your Profile Overview:*\n` +
-            `• Target Score: *${target}*\n` +
-            `• Pathway: *${pathway}*\n` +
-            `• Reminders: *Active* (Mon, Wed, Sat at 18:00)\n\n` +
-            `You will now receive personalized daily study schedules with direct lesson links! 🚀\n\n` +
-            `💡 *Commands:*\n` +
-            `/status - Check your next SAT lesson & roadmap\n` +
-            `/settings - View reminder schedule\n` +
-            `/disconnect - Unlink this Telegram account\n` +
-            `/help - View command list`,
+          defT.welcomeLinked(studentName, target, pathway),
           {
             inline_keyboard: [
-              [{ text: '🚀 Open SATPrep Dashboard', url: `${FRONTEND_URL}/dashboard` }],
-              [{ text: '📚 Start Learning', url: `${FRONTEND_URL}/learn` }],
+              [{ text: defT.btnDashboard, url: `${FRONTEND_URL}/dashboard` }],
+              [{ text: defT.btnStartLearning, url: `${FRONTEND_URL}/learn` }],
+              [{ text: '🌐 Change Language (O\'zbekcha / Русский)', callback_data: 'open_lang_menu' }],
             ],
           }
         );
@@ -214,38 +315,32 @@ export default async function handler(req: any, res: any) {
       }
 
       // /start without token
-      const { data: existingConn } = await supabase
-        .from('telegram_connections')
-        .select('user_id, is_active, profiles(full_name, target_score)')
-        .eq('telegram_chat_id', chatId)
-        .eq('is_active', true)
-        .maybeSingle();
+      if (userId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', userId)
+          .maybeSingle();
 
-      if (existingConn) {
-        const student = (existingConn as any).profiles?.full_name || firstName;
+        const student = profile?.full_name || firstName;
         await sendTelegramMessage(
           chatId,
-          `👋 *Welcome back, ${student}!* \n\n` +
-            `Your account is actively linked to SATPrep.\n\n` +
-            `Use /status to see your next scheduled study module, or /settings to view your schedule.`,
+          t.welcomeBack(student),
           {
             inline_keyboard: [
-              [{ text: '📚 Continue Studying', url: `${FRONTEND_URL}/learn` }],
+              [{ text: t.btnContinueStudying, url: `${FRONTEND_URL}/learn` }],
+              [{ text: t.btnChangeLang, callback_data: 'open_lang_menu' }],
             ],
           }
         );
       } else {
         await sendTelegramMessage(
           chatId,
-          `👋 *Welcome to SATPrep Reminder Bot!* 🎯\n\n` +
-            `To connect your account and receive study reminders:\n\n` +
-            `1. Sign in to your SATPrep account.\n` +
-            `2. Go to **Settings**.\n` +
-            `3. Click **Connect Telegram**.\n\n` +
-            `The link will automatically verify your account here!`,
+          t.welcomeUnlinked,
           {
             inline_keyboard: [
-              [{ text: '🌐 Connect on SATPrep', url: `${FRONTEND_URL}/settings` }],
+              [{ text: t.btnConnectSettings, url: `${FRONTEND_URL}/settings` }],
+              [{ text: t.btnChangeLang, callback_data: 'open_lang_menu' }],
             ],
           }
         );
@@ -254,33 +349,23 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ ok: true });
     }
 
-    // 2. /status
+    // 3. /status
     if (command === '/status') {
-      const { data: conn } = await supabase
-        .from('telegram_connections')
-        .select('user_id, is_active')
-        .eq('telegram_chat_id', chatId)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!conn) {
-        await sendTelegramMessage(
-          chatId,
-          `⚠️ You haven't linked a SATPrep account yet.\n\nPlease log in at ${FRONTEND_URL}/settings and click **Connect Telegram**.`
-        );
+      if (!userId) {
+        await sendTelegramMessage(chatId, t.statusNotLinked);
         return res.status(200).json({ ok: true });
       }
 
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name, target_score, starting_level')
-        .eq('id', conn.user_id)
+        .eq('id', userId)
         .single();
 
       const { data: roadmap } = await supabase
         .from('roadmaps')
         .select('id, pathway, status')
-        .eq('user_id', conn.user_id)
+        .eq('user_id', userId)
         .eq('is_active', true)
         .maybeSingle();
 
@@ -302,16 +387,16 @@ export default async function handler(req: any, res: any) {
 
       await sendTelegramMessage(
         chatId,
-        `📊 *Your SAT Study Status*\n\n` +
-          `👤 Student: *${profile?.full_name || 'Student'}*\n` +
-          `🎯 Target Score: *${profile?.target_score || 1400}*\n` +
-          `🛣️ Pathway: *${(profile?.starting_level || 'pre_sat').replace('_', ' ').toUpperCase()}*\n\n` +
-          `📖 *Next Up on Your Roadmap:*\n${nextLessonText}\n\n` +
-          `Keep up the momentum towards your dream score! 🚀`,
+        t.statusReport(
+          profile?.full_name || 'Student',
+          profile?.target_score || 1400,
+          (profile?.starting_level || 'pre_sat').replace('_', ' ').toUpperCase(),
+          nextLessonText
+        ),
         {
           inline_keyboard: [
-            [{ text: '📖 Open Current Lesson', url: `${FRONTEND_URL}/learn` }],
-            [{ text: '🗺️ View Roadmap', url: `${FRONTEND_URL}/roadmap` }],
+            [{ text: t.btnOpenLesson, url: `${FRONTEND_URL}/learn` }],
+            [{ text: t.btnViewRoadmap, url: `${FRONTEND_URL}/roadmap` }],
           ],
         }
       );
@@ -319,45 +404,34 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ ok: true });
     }
 
-    // 3. /settings
+    // 4. /settings
     if (command === '/settings') {
-      const { data: conn } = await supabase
-        .from('telegram_connections')
-        .select('user_id')
-        .eq('telegram_chat_id', chatId)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!conn) {
-        await sendTelegramMessage(
-          chatId,
-          `⚠️ You haven't linked a SATPrep account yet.\nPlease visit ${FRONTEND_URL}/settings to connect.`
-        );
+      if (!userId) {
+        await sendTelegramMessage(chatId, t.settingsNotLinked);
         return res.status(200).json({ ok: true });
       }
-
-      const { data: settings } = await supabase
-        .from('reminder_settings')
-        .select('*')
-        .eq('user_id', conn.user_id)
-        .maybeSingle();
 
       const days = (settings?.study_days || ['monday', 'wednesday', 'saturday'])
         .map((d: string) => d.slice(0, 3).toUpperCase())
         .join(', ');
 
+      const { timezone, language } = parseTimezoneAndLang(settings?.timezone);
+      const curT = I18N[language];
+
       await sendTelegramMessage(
         chatId,
-        `⚙️ *Your Reminder Settings*\n\n` +
-          `• Reminders: *${settings?.enabled ? '✅ Enabled' : '⏸️ Paused'}*\n` +
-          `• Preferred Time: *${settings?.reminder_time || '18:00:00'}*\n` +
-          `• Timezone: *${settings?.timezone || 'UTC'}*\n` +
-          `• Study Days: *${days}*\n` +
-          `• Advance Notice: *${settings?.reminder_before_minutes || 30} minutes*\n\n` +
-          `To modify these settings, update them in your SATPrep web settings:`,
+        curT.settingsReport(
+          settings?.enabled ?? true,
+          settings?.reminder_time || '18:00:00',
+          timezone,
+          days,
+          settings?.reminder_before_minutes || 15,
+          curT.langFlag + ' ' + curT.langName
+        ),
         {
           inline_keyboard: [
-            [{ text: '⚙️ Edit Reminder Settings', url: `${FRONTEND_URL}/settings` }],
+            [{ text: curT.btnSettings, url: `${FRONTEND_URL}/settings` }],
+            [{ text: curT.btnChangeLang, callback_data: 'open_lang_menu' }],
           ],
         }
       );
@@ -365,44 +439,30 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ ok: true });
     }
 
-    // 4. /disconnect
+    // 5. /disconnect
     if (command === '/disconnect') {
       await supabase
         .from('telegram_connections')
         .update({ is_active: false })
         .eq('telegram_chat_id', chatId);
 
-      await sendTelegramMessage(
-        chatId,
-        `👋 *Telegram Disconnected*\n\n` +
-          `Your Telegram account has been unlinked from SATPrep. You will no longer receive study reminders here.\n\n` +
-          `You can reconnect at any time from your SATPrep Settings page.`,
-        {
-          inline_keyboard: [
-            [{ text: '🌐 Reconnect in Settings', url: `${FRONTEND_URL}/settings` }],
-          ],
-        }
-      );
+      await sendTelegramMessage(chatId, t.disconnectSuccess, {
+        inline_keyboard: [
+          [{ text: t.btnConnectSettings, url: `${FRONTEND_URL}/settings` }],
+        ],
+      });
 
       return res.status(200).json({ ok: true });
     }
 
-    // 5. /help
-    await sendTelegramMessage(
-      chatId,
-      `🤖 *SATPrep Reminder Bot Commands*\n\n` +
-        `• /status - Check your current roadmap & next study lesson\n` +
-        `• /settings - View your reminder schedule & notification days\n` +
-        `• /disconnect - Unlink this Telegram account\n` +
-        `• /help - Display this command overview\n\n` +
-        `Need help with SAT concepts? Head to the platform to chat with your Socratic AI Tutor! 🦉`,
-      {
-        inline_keyboard: [
-          [{ text: '🤖 Open AI Tutor', url: `${FRONTEND_URL}/tutor` }],
-          [{ text: '📊 Dashboard', url: `${FRONTEND_URL}/dashboard` }],
-        ],
-      }
-    );
+    // 6. /help (Default)
+    await sendTelegramMessage(chatId, t.helpMessage, {
+      inline_keyboard: [
+        [{ text: t.btnAITutor, url: `${FRONTEND_URL}/tutor` }],
+        [{ text: t.btnDashboard, url: `${FRONTEND_URL}/dashboard` }],
+        [{ text: t.btnChangeLang, callback_data: 'open_lang_menu' }],
+      ],
+    });
 
     return res.status(200).json({ ok: true });
   } catch (error: any) {

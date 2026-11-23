@@ -161,7 +161,7 @@ export const AdminLessonsPage: React.FC = () => {
 
       setLessons((prev) => [...prev, enriched].sort((a, b) => a.order_index - b.order_index));
       setIsAddOpen(false);
-      showToast(`Урок "${formData.title}" успешно создан!`, 'success');
+      showToast(`Lesson "${formData.title}" created successfully!`, 'success');
     } catch (err: any) {
       showToast(err.message || 'Failed to create lesson', 'error');
     } finally {
@@ -213,7 +213,7 @@ export const AdminLessonsPage: React.FC = () => {
       );
 
       setEditingLesson(null);
-      showToast(`Урок обновлен!`, 'success');
+      showToast(`Lesson updated successfully!`, 'success');
     } catch (err: any) {
       showToast(err.message || 'Failed to update lesson', 'error');
     } finally {
@@ -229,7 +229,7 @@ export const AdminLessonsPage: React.FC = () => {
     try {
       await AdminService.deleteLesson(deletingLesson.id);
       setLessons((prev) => prev.filter((l) => l.id !== deletingLesson.id));
-      showToast(`Урок "${deletingLesson.title}" успешно удален.`, 'success');
+      showToast(`Lesson "${deletingLesson.title}" deleted.`, 'success');
       setDeletingLesson(null);
     } catch (err: any) {
       showToast(err.message || 'Failed to delete lesson', 'error');
@@ -289,10 +289,10 @@ export const AdminLessonsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2.5">
             <BookOpen className="w-6 h-6 text-indigo-400" />
-            Управление Уроками (SAT Curriculum)
+            Lessons Management (SAT Curriculum)
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Всего {lessons.length} уроков: <span className="text-indigo-400 font-semibold">{mathCount} Math</span>,{' '}
+            Total {lessons.length} lessons: <span className="text-indigo-400 font-semibold">{mathCount} Math</span>,{' '}
             <span className="text-violet-400 font-semibold">{rwCount} Reading & Writing</span>
           </p>
         </div>
@@ -303,7 +303,7 @@ export const AdminLessonsPage: React.FC = () => {
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-medium text-sm rounded-xl transition shadow-sm hover:shadow-indigo-500/20"
         >
           <Plus className="w-4 h-4" />
-          Добавить Урок
+          Add Lesson
         </button>
       </div>
 
@@ -315,7 +315,7 @@ export const AdminLessonsPage: React.FC = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Поиск по названию или теме..."
+            placeholder="Search by title or topic..."
             className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -327,7 +327,7 @@ export const AdminLessonsPage: React.FC = () => {
             onChange={(e) => setSubjectFilter(e.target.value as any)}
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="all">Все предметы</option>
+            <option value="all">All Subjects</option>
             <option value="math">📐 Math</option>
             <option value="reading_writing">📖 Reading & Writing</option>
           </select>
@@ -340,7 +340,7 @@ export const AdminLessonsPage: React.FC = () => {
             onChange={(e) => setDifficultyFilter(e.target.value as any)}
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="all">Любая сложность</option>
+            <option value="all">All Difficulties</option>
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
             <option value="hard">Hard</option>
@@ -353,22 +353,22 @@ export const AdminLessonsPage: React.FC = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
             <LoadingSpinner size="lg" />
-            <p className="text-sm">Загрузка базы уроков...</p>
+            <p className="text-sm">Loading lessons...</p>
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-rose-400">Ошибка загрузки: {error}</div>
+          <div className="p-8 text-center text-rose-400">Error loading lessons: {error}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider bg-slate-950/60">
                   <th className="px-4 py-3.5 text-left w-12 font-medium">#</th>
-                  <th className="px-4 py-3.5 text-left font-medium">Название Урока</th>
-                  <th className="px-4 py-3.5 text-left font-medium">Модуль / Раздел</th>
-                  <th className="px-4 py-3.5 text-left font-medium">Предмет</th>
-                  <th className="px-4 py-3.5 text-left font-medium">Время</th>
-                  <th className="px-4 py-3.5 text-left font-medium">Сложность</th>
-                  <th className="px-4 py-3.5 text-right font-medium pr-6">Действия</th>
+                  <th className="px-4 py-3.5 text-left font-medium">Lesson Title</th>
+                  <th className="px-4 py-3.5 text-left font-medium">Module / Unit</th>
+                  <th className="px-4 py-3.5 text-left font-medium">Subject</th>
+                  <th className="px-4 py-3.5 text-left font-medium">Duration</th>
+                  <th className="px-4 py-3.5 text-left font-medium">Difficulty</th>
+                  <th className="px-4 py-3.5 text-right font-medium pr-6">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
@@ -405,7 +405,7 @@ export const AdminLessonsPage: React.FC = () => {
                     <td className="px-4 py-3.5 text-slate-300 text-xs">
                       <span className="inline-flex items-center gap-1 text-slate-400">
                         <Clock className="w-3 h-3" />
-                        {l.estimated_duration_minutes} мин.
+                        {l.estimated_duration_minutes} min
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
@@ -421,14 +421,14 @@ export const AdminLessonsPage: React.FC = () => {
                       <div className="inline-flex items-center gap-1.5 opacity-90 group-hover:opacity-100">
                         <button
                           onClick={() => handleOpenEdit(l)}
-                          title="Редактировать урок"
+                          title="Edit Lesson"
                           className="p-1.5 bg-slate-800 hover:bg-indigo-600 rounded-lg text-slate-300 hover:text-white transition"
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeletingLesson(l)}
-                          title="Удалить урок"
+                          title="Delete Lesson"
                           className="p-1.5 bg-slate-800 hover:bg-rose-600 rounded-lg text-slate-300 hover:text-white transition"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -441,7 +441,7 @@ export const AdminLessonsPage: React.FC = () => {
             </table>
 
             {filtered.length === 0 && (
-              <div className="text-center py-16 text-slate-500">Уроки по заданному фильтру не найдены.</div>
+              <div className="text-center py-16 text-slate-500">No lessons found matching the filters.</div>
             )}
           </div>
         )}
@@ -454,7 +454,7 @@ export const AdminLessonsPage: React.FC = () => {
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Plus className="w-5 h-5 text-indigo-400" />
-                Создать Новый Урок
+                Create New Lesson
               </h2>
               <button onClick={() => setIsAddOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -464,27 +464,27 @@ export const AdminLessonsPage: React.FC = () => {
             <form onSubmit={handleSaveAdd} className="space-y-4 mt-5">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Название Урока *
+                  Lesson Title *
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Например: Quadratic Formula & Discriminant Analysis"
+                  placeholder="e.g.: Quadratic Formula & Discriminant Analysis"
                   className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Краткое описание / Summary
+                  Summary / Overview
                 </label>
                 <textarea
                   rows={2}
                   value={formData.summary}
                   onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                  placeholder="О чем этот урок и какие ключевые концепции Digital SAT он охватывает..."
+                  placeholder="What this lesson covers and its key Digital SAT takeaways..."
                   className="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -492,7 +492,7 @@ export const AdminLessonsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Предмет
+                    Subject
                   </label>
                   <select
                     value={formData.subject}
@@ -516,7 +516,7 @@ export const AdminLessonsPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Сложность
+                    Difficulty
                   </label>
                   <select
                     value={formData.difficulty}
@@ -532,14 +532,14 @@ export const AdminLessonsPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Модуль / Раздел программы
+                  Curriculum Module / Unit
                 </label>
                 <select
                   value={formData.module_id}
                   onChange={(e) => setFormData({ ...formData, module_id: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="">(Автоматический выбор)</option>
+                  <option value="">(Automatic Selection)</option>
                   {modules
                     .filter((m) => m.subject === formData.subject)
                     .map((m) => (
@@ -553,7 +553,7 @@ export const AdminLessonsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Длительность (минут)
+                    Duration (Minutes)
                   </label>
                   <input
                     type="number"
@@ -569,7 +569,7 @@ export const AdminLessonsPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Порядковый номер (#)
+                    Order Index (#)
                   </label>
                   <input
                     type="number"
@@ -587,14 +587,14 @@ export const AdminLessonsPage: React.FC = () => {
                   onClick={() => setIsAddOpen(false)}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition"
                 >
-                  Отмена
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition disabled:opacity-50"
                 >
-                  {submitting ? 'Сохранение...' : 'Создать Урок'}
+                  {submitting ? 'Saving...' : 'Create Lesson'}
                 </button>
               </div>
             </form>
@@ -609,7 +609,7 @@ export const AdminLessonsPage: React.FC = () => {
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Edit3 className="w-5 h-5 text-indigo-400" />
-                Редактирование Урока
+                Edit Lesson
               </h2>
               <button onClick={() => setEditingLesson(null)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -619,7 +619,7 @@ export const AdminLessonsPage: React.FC = () => {
             <form onSubmit={handleSaveEdit} className="space-y-4 mt-5">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Название Урока *
+                  Lesson Title *
                 </label>
                 <input
                   type="text"
@@ -632,7 +632,7 @@ export const AdminLessonsPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Краткое описание / Summary
+                  Summary / Overview
                 </label>
                 <textarea
                   rows={2}
@@ -645,7 +645,7 @@ export const AdminLessonsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Предмет
+                    Subject
                   </label>
                   <select
                     value={formData.subject}
@@ -659,7 +659,7 @@ export const AdminLessonsPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Сложность
+                    Difficulty
                   </label>
                   <select
                     value={formData.difficulty}
@@ -675,14 +675,14 @@ export const AdminLessonsPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Модуль / Раздел
+                  Curriculum Module / Unit
                 </label>
                 <select
                   value={formData.module_id}
                   onChange={(e) => setFormData({ ...formData, module_id: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="">(Без привязки к модулю)</option>
+                  <option value="">(No module linked)</option>
                   {modules
                     .filter((m) => m.subject === formData.subject)
                     .map((m) => (
@@ -696,7 +696,7 @@ export const AdminLessonsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Длительность (минут)
+                    Duration (Minutes)
                   </label>
                   <input
                     type="number"
@@ -712,7 +712,7 @@ export const AdminLessonsPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Порядковый номер (#)
+                    Order Index (#)
                   </label>
                   <input
                     type="number"
@@ -730,14 +730,14 @@ export const AdminLessonsPage: React.FC = () => {
                   onClick={() => setEditingLesson(null)}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition"
                 >
-                  Отмена
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition disabled:opacity-50"
                 >
-                  {submitting ? 'Сохранение...' : 'Сохранить Изменения'}
+                  {submitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -754,15 +754,15 @@ export const AdminLessonsPage: React.FC = () => {
                 <Trash2 className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-white">Удалить этот урок?</h3>
+                <h3 className="text-lg font-bold text-white">Delete this lesson?</h3>
                 <p className="text-sm text-slate-300 mt-1.5">
-                  Вы действительно хотите безвозвратно удалить урок:
+                  Are you sure you want to permanently delete:
                 </p>
                 <p className="text-sm font-semibold text-rose-300 mt-1 p-2 bg-slate-950 rounded-lg border border-slate-800">
                   {deletingLesson.title}
                 </p>
                 <p className="text-xs text-slate-400 mt-2">
-                  Это действие удалит урок из базы данных Supabase и учебного плана.
+                  This action will permanently delete the lesson from the Supabase database and curriculum roadmap.
                 </p>
               </div>
             </div>
@@ -773,7 +773,7 @@ export const AdminLessonsPage: React.FC = () => {
                 onClick={() => setDeletingLesson(null)}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition"
               >
-                Отмена
+                Cancel
               </button>
               <button
                 type="button"
@@ -781,7 +781,7 @@ export const AdminLessonsPage: React.FC = () => {
                 onClick={handleConfirmDelete}
                 className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-sm font-medium transition disabled:opacity-50"
               >
-                {submitting ? 'Удаление...' : 'Да, удалить'}
+                {submitting ? 'Deleting...' : 'Yes, Delete'}
               </button>
             </div>
           </div>

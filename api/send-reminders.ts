@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { I18N, parseTimezoneAndLang } from './telegram-i18n';
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL ||
@@ -229,8 +230,9 @@ export default async function handler(req: any, res: any) {
           continue;
         }
 
-        // Determine current local time in student's timezone
-        const tz = settings?.timezone || 'Asia/Tashkent';
+        // Determine current local time in student's timezone and language
+        const { timezone: tz, language } = parseTimezoneAndLang(settings?.timezone);
+        const t = I18N[language] || I18N.en;
         let localDay = '';
         let localHour = 0;
         let localMinute = 0;
@@ -365,14 +367,14 @@ export default async function handler(req: any, res: any) {
 
         // Calculate actual real-time remaining minutes to avoid confusion if cron triggers with a delay
         const minutesUntilLesson = lessonMinutesFromMidnight - currentMinutesFromMidnight;
-        let timeRemainingText = `через *${reminderBefore} минут* (в *${formattedLessonTime}*)`;
+        let timeRemainingText = t.timeRemainingBefore(reminderBefore, formattedLessonTime);
 
         if (minutesUntilLesson <= 1 && minutesUntilLesson >= -5) {
-          timeRemainingText = `*прямо сейчас* (в *${formattedLessonTime}*)`;
+          timeRemainingText = t.timeRemainingNow(formattedLessonTime);
         } else if (minutesUntilLesson > 1) {
-          timeRemainingText = `через *${minutesUntilLesson} мин.* (в *${formattedLessonTime}*)`;
+          timeRemainingText = t.timeRemainingMins(minutesUntilLesson, formattedLessonTime);
         } else {
-          timeRemainingText = `на сегодня (запланировано на *${formattedLessonTime}*)`;
+          timeRemainingText = t.timeRemainingScheduled(formattedLessonTime);
         }
 
         // Check overdue vocabulary for this user
@@ -390,22 +392,25 @@ export default async function handler(req: any, res: any) {
 
         const isPastLesson = minutesUntilLesson < -5;
         const greetingLine = isPastLesson
-          ? `Привет, ${studentName}! Напоминаем о сегодняшнем занятии SAT (запланировано на ${formattedLessonTime}).`
-          : `Привет, ${studentName}! Твой урок начнется ${timeRemainingText}.`;
+          ? t.reminderGreetingLate(studentName, formattedLessonTime)
+          : t.reminderGreeting(studentName, timeRemainingText);
+
+        const vocabLine = vocabDueCount > 0 ? t.reminderVocabDue(vocabDueCount) + '\n\n' : '\n';
 
         const msg =
-          `⏰ *Напоминание о занятии SAT!* 📖\n\n` +
+          `${t.reminderHeader}\n\n` +
           `${greetingLine}\n\n` +
-          `🎯 *Тема сегодняшнего урока:* ${lessonTitle}\n` +
-          `⏱ *Ориентировочное время:* ${estMinutes} минут\n` +
-          (vocabDueCount > 0 ? `🔤 *Слов на повторение (SRS):* ${vocabDueCount} слов ждут тебя!\n\n` : '\n') +
-          `Удели время сегодня, чтобы стабильно набрать свой целевой балл! 💪`;
+          `${t.reminderTopic(lessonTitle)}\n` +
+          `${t.reminderEstTime(estMinutes)}\n` +
+          vocabLine +
+          t.reminderFooter;
 
         await sendTelegramMessage(conn.telegram_chat_id, msg, {
           inline_keyboard: [
-            [{ text: '🚀 Начать урок сейчас', url: `${FRONTEND_URL}/learn` }],
-            [{ text: '🔤 Учить слова SAT', url: `${FRONTEND_URL}/vocabulary` }],
-            [{ text: '📊 Мой прогресс', url: `${FRONTEND_URL}/progress` }],
+            [{ text: t.btnStartLearning, url: `${FRONTEND_URL}/learn` }],
+            [{ text: t.btnLearnVocab, url: `${FRONTEND_URL}/vocabulary` }],
+            [{ text: t.btnMyProgress, url: `${FRONTEND_URL}/progress` }],
+            [{ text: t.btnChangeLang, callback_data: 'open_lang_menu' }],
           ],
         });
 
